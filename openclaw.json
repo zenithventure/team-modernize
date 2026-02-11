@@ -1,0 +1,87 @@
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    },
+    "list": [
+      {
+        "id": "legacy-mod/commander",
+        "name": "LM-Commander",
+        "role": "analysis",
+        "tools": {
+          "deny": ["write", "edit", "apply_patch"]
+        },
+        "subagents": {
+          "allowAgents": []
+        }
+      },
+      {
+        "id": "legacy-mod/architect",
+        "name": "LM-Architect",
+        "role": "analysis",
+        "tools": {
+          "deny": ["write", "edit", "apply_patch"]
+        },
+        "subagents": {
+          "allowAgents": []
+        }
+      },
+      {
+        "id": "legacy-mod/documenter",
+        "name": "LM-Documenter",
+        "role": "analysis",
+        "tools": {
+          "deny": ["write", "edit", "apply_patch"]
+        },
+        "subagents": {
+          "allowAgents": []
+        }
+      },
+      {
+        "id": "legacy-mod/compliance-gate",
+        "name": "LM-ComplianceGate",
+        "role": "verification",
+        "tools": {
+          "deny": ["write", "edit", "apply_patch", "sessions_spawn", "sessions_send"]
+        },
+        "subagents": {
+          "allowAgents": []
+        }
+      },
+      {
+        "id": "legacy-mod/migrator",
+        "name": "LM-Migrator",
+        "role": "coding",
+        "tools": {
+          "deny": []
+        },
+        "subagents": {
+          "allowAgents": []
+        }
+      }
+    ]
+  },
+  "tools": {
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "legacy-mod/commander",
+        "legacy-mod/architect",
+        "legacy-mod/documenter",
+        "legacy-mod/compliance-gate",
+        "legacy-mod/migrator"
+      ]
+    }
+  },
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/skills"]
+    }
+  }
+}
