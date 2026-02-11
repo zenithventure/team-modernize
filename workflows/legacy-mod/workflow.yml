@@ -1,0 +1,567 @@
+# ============================================================
+# OpenClaw Legacy Modernization Workflow
+# ============================================================
+# A phased pipeline for modernizing legacy applications:
+#   Phase 1: LEARN — understand the codebase, generate documentation
+#   Phase 2: PLAN — design target architecture, compliance strategy, migration sequence
+#   Phase 3: EXECUTE — incremental migration with per-step compliance verification
+#
+# Install: antfarm workflow install legacy-mod
+# Run:     antfarm workflow run legacy-mod "<task description>"
+# ============================================================
+
+id: legacy-mod
+name: Legacy Modernization
+description: >
+  Phased legacy application modernization: learn the codebase, plan the
+  migration, execute incrementally with compliance verification at every step.
+  Follows the strangler fig pattern — zero downtime, zero data loss.
+
+# ── Context Variables ──────────────────────────────────────
+# These are seeded at run creation and flow through the pipeline.
+context:
+  repo: ""              # Path to the legacy codebase (set at run time)
+  compliance: "soc2,gdpr"  # Comma-separated compliance frameworks
+  deployment: ""        # "in-house" or "cloud:<provider>"
+  customer: ""          # Customer name for documentation headers
+
+# ── Agent Definitions ──────────────────────────────────────
+agents:
+  # Red Commander — drives execution, scans codebase, sequences migration
+  - id: commander
+    name: Commander
+    role: analysis
+    model: claude-opus-4-6
+    description: >
+      Team lead and execution driver. Scans the codebase, sequences
+      migration steps, coordinates the team, and gates phase transitions.
+    workspace:
+      baseDir: agents/scanner
+      files:
+        AGENTS.md: ../../agents/red-commander/AGENTS-legacy-mod.md
+        SOUL.md: ../../agents/red-commander/SOUL-legacy-mod.md
+        IDENTITY.md: ../../agents/red-commander/IDENTITY.md
+    skills: [legacy-modernization]
+
+  # Yellow Spark — designs target architecture, extracts business logic
+  - id: architect
+    name: Architect
+    role: analysis
+    model: claude-opus-4-6
+    description: >
+      Creative lead and modernization architect. Extracts business logic,
+      designs target architecture, maps new capabilities to technical components.
+    workspace:
+      baseDir: agents/architect
+      files:
+        AGENTS.md: ../../agents/yellow-spark/AGENTS-legacy-mod.md
+        SOUL.md: ../../agents/yellow-spark/SOUL-legacy-mod.md
+        IDENTITY.md: ../../agents/yellow-spark/IDENTITY.md
+    skills: [legacy-modernization]
+
+  # Green Anchor — assembles documentation, tracks compliance matrix
+  - id: documenter
+    name: Documenter
+    role: analysis
+    model: claude-sonnet-4-5-20250929
+    description: >
+      Operations lead and documentation owner. Assembles customer-facing
+      documentation, maintains compliance matrix, tracks migration progress.
+    workspace:
+      baseDir: agents/documenter
+      files:
+        AGENTS.md: ../../agents/green-anchor/AGENTS-legacy-mod.md
+        SOUL.md: ../../agents/green-anchor/SOUL-legacy-mod.md
+        IDENTITY.md: ../../agents/green-anchor/IDENTITY.md
+    skills: [legacy-modernization]
+
+  # Blue Lens — verifies, audits compliance, reviews migrations
+  - id: compliance-gate
+    name: ComplianceGate
+    role: verification
+    model: claude-opus-4-6
+    description: >
+      Quality gate and compliance enforcer. Verifies documentation accuracy,
+      audits dead code, reviews security, validates every migration step
+      against SOC 2 and GDPR requirements. CANNOT modify code.
+    workspace:
+      baseDir: agents/compliance-gate
+      files:
+        AGENTS.md: ../../agents/blue-lens/AGENTS-legacy-mod.md
+        SOUL.md: ../../agents/blue-lens/SOUL-legacy-mod.md
+        IDENTITY.md: ../../agents/blue-lens/IDENTITY.md
+    skills: [legacy-modernization]
+
+  # Migrator — writes the actual modernized code (Phase 3 only)
+  - id: migrator
+    name: Migrator
+    role: coding
+    model: claude-opus-4-6
+    description: >
+      Code migration specialist. Rewrites legacy modules to target
+      architecture, builds anti-corruption layers, runs characterization
+      tests. Only active during Phase 3 EXECUTE.
+    workspace:
+      baseDir: agents/migrator
+      files:
+        AGENTS.md: ../../agents/red-commander/AGENTS-legacy-mod.md
+        SOUL.md: ../../agents/red-commander/SOUL-legacy-mod.md
+        IDENTITY.md: ../../agents/red-commander/IDENTITY.md
+    skills: [legacy-modernization]
+
+# ── Pipeline Steps ─────────────────────────────────────────
+steps:
+  # ╔══════════════════════════════════════════════════════╗
+  # ║  PHASE 1: LEARN                                     ║
+  # ╚══════════════════════════════════════════════════════╝
+
+  - id: scan-codebase
+    name: "Phase 1.1 — Scan Codebase"
+    agent: commander
+    type: single
+    input: |
+      You are beginning Phase 1 (LEARN) of a legacy modernization engagement.
+
+      LEGACY CODEBASE: {{repo}}
+      CUSTOMER: {{customer}}
+      COMPLIANCE REQUIREMENTS: {{compliance}}
+      DEPLOYMENT ENVIRONMENT: {{deployment}}
+
+      Scan the entire codebase and produce:
+      1. system-map.yaml — languages, frameworks, build system, entry points, dependency graph, database schemas, external integrations
+      2. dependency-graph.md — module-to-module call graph with circular dependencies and tight coupling flagged
+
+      Write outputs to your workspace. Be thorough — this is the foundation for everything that follows.
+
+      Output format:
+      STATUS: done
+      MODULES_COUNT: <number of modules identified>
+      LANGUAGES: <comma-separated list>
+      FRAMEWORK: <primary framework>
+      DATABASE: <database type>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: extract-business-logic
+    name: "Phase 1.2 — Extract Business Logic"
+    agent: architect
+    type: single
+    input: |
+      Phase 1 (LEARN) — Business Logic Extraction.
+
+      LEGACY CODEBASE: {{repo}}
+      MODULES FOUND: {{modules_count}}
+      LANGUAGES: {{languages}}
+      FRAMEWORK: {{framework}}
+
+      For each major module, extract:
+      1. Domain entities and their relationships
+      2. Business rules (validation, calculation, workflow, authorization)
+      3. Implicit behaviors (error handling, retry logic, default values)
+      4. Integration contracts (data formats expected/produced)
+      5. Architectural patterns in use and anti-patterns found
+
+      Write per-module: business-logic-<module>.md
+      Write overall: pattern-analysis.md
+
+      Output format:
+      STATUS: done
+      BUSINESS_RULES_COUNT: <number of rules extracted>
+      PATTERNS: <comma-separated architectural patterns found>
+      ANTI_PATTERNS: <comma-separated anti-patterns found>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: audit-and-verify
+    name: "Phase 1.3 — Dead Code Audit + Security Scan + Verification"
+    agent: compliance-gate
+    type: single
+    input: |
+      Phase 1 (LEARN) — Audit, Scan, and Verify.
+
+      LEGACY CODEBASE: {{repo}}
+      MODULES FOUND: {{modules_count}}
+      COMPLIANCE REQUIREMENTS: {{compliance}}
+
+      Perform three parallel analyses:
+
+      1. DEAD CODE AUDIT: For each module, identify unused functions, unreachable
+         code paths, orphaned endpoints, deprecated features. Assign confidence
+         scores (HIGH/MEDIUM/LOW). Output: dead-code-report.md
+
+      2. SECURITY SCAN: OWASP Top 10, hardcoded secrets, SQL injection, XSS,
+         insecure auth patterns, unencrypted PII storage. Output: security-scan.md
+
+      3. VERIFICATION: Cross-reference the business logic documentation against
+         actual source code. Flag any discrepancies. Output: verification-report.md
+
+      Output format:
+      STATUS: done
+      DEAD_CODE_PERCENT: <percentage of codebase identified as dead>
+      SECURITY_ISSUES: <count of security findings>
+      VERIFICATION_DISCREPANCIES: <count of documentation inaccuracies>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: assemble-documentation
+    name: "Phase 1.4 — Assemble System Documentation Package"
+    agent: documenter
+    type: single
+    input: |
+      Phase 1 (LEARN) — Assemble the customer-facing System Documentation Package.
+
+      CUSTOMER: {{customer}}
+      MODULES: {{modules_count}}
+      LANGUAGES: {{languages}}
+      FRAMEWORK: {{framework}}
+      DATABASE: {{database}}
+      BUSINESS RULES: {{business_rules_count}}
+      DEAD CODE: {{dead_code_percent}}%
+      SECURITY ISSUES: {{security_issues}}
+
+      Read all Phase 1 outputs from other agents' workspaces:
+      - system-map.yaml and dependency-graph.md (from Commander)
+      - business-logic-*.md and pattern-analysis.md (from Architect)
+      - dead-code-report.md, security-scan.md, verification-report.md (from ComplianceGate)
+
+      Synthesize into a single System Documentation Package:
+      - Table of contents
+      - Executive summary (for business stakeholders)
+      - Detailed technical sections (for technical leads)
+      - Cross-references between modules
+      - Glossary of domain terms
+      - Appendix: dead code report, security findings
+
+      Output: system-documentation.md
+
+      Output format:
+      STATUS: done
+      DOC_PAGES: <approximate page count>
+      READY_FOR_CUSTOMER: yes
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  # ── PHASE GATE: Customer validates Phase 1 documentation ──
+  - id: phase1-gate
+    name: "Phase Gate — Customer Reviews Documentation"
+    agent: commander
+    type: single
+    input: |
+      PHASE GATE: Phase 1 (LEARN) → Phase 2 (PLAN)
+
+      The System Documentation Package is ready for customer review.
+      Documentation: {{doc_pages}} pages covering {{modules_count}} modules.
+
+      Present to the customer:
+      1. Executive summary of findings
+      2. Key statistics: {{dead_code_percent}}% dead code, {{security_issues}} security issues
+      3. Request validation that the documentation accurately represents their system
+
+      THIS STEP REQUIRES HUMAN INPUT.
+      Escalate to the human with the documentation package and ask for customer feedback.
+
+      Output format:
+      STATUS: done
+      CUSTOMER_APPROVED: yes/no
+      CUSTOMER_FEEDBACK: <summary of feedback>
+      NEW_CAPABILITIES_REQUESTED: <comma-separated list of capabilities the customer wants>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 1
+      on_exhausted:
+        escalate_to: human
+
+  # ╔══════════════════════════════════════════════════════╗
+  # ║  PHASE 2: PLAN                                      ║
+  # ╚══════════════════════════════════════════════════════╝
+
+  - id: design-architecture
+    name: "Phase 2.1 — Design Target Architecture"
+    agent: architect
+    type: single
+    input: |
+      Phase 2 (PLAN) — Design the Target Architecture.
+
+      LEGACY CODEBASE: {{repo}}
+      DEPLOYMENT TARGET: {{deployment}}
+      COMPLIANCE: {{compliance}}
+      CUSTOMER FEEDBACK: {{customer_feedback}}
+      NEW CAPABILITIES REQUESTED: {{new_capabilities_requested}}
+      PATTERNS FOUND: {{patterns}}
+      ANTI-PATTERNS FOUND: {{anti_patterns}}
+
+      Design the target architecture:
+      1. Component diagrams for each bounded context
+      2. Data flow between components
+      3. API contracts (if API layer requested)
+      4. Technology choices with justification
+      5. How requested capabilities ({{new_capabilities_requested}}) map to components
+      6. Provide 2-3 alternative approaches for major decisions
+
+      The design MUST support incremental migration (strangler fig pattern).
+
+      Output: target-architecture.md, capability-map.md
+
+      Output format:
+      STATUS: done
+      ARCHITECTURE_PATTERN: <chosen high-level pattern>
+      BOUNDED_CONTEXTS: <count>
+      NEW_CAPABILITIES_MAPPED: <count>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: compliance-gap-analysis
+    name: "Phase 2.2 — Compliance Gap Analysis"
+    agent: compliance-gate
+    type: single
+    input: |
+      Phase 2 (PLAN) — Compliance Gap Analysis.
+
+      COMPLIANCE FRAMEWORKS: {{compliance}}
+      DEPLOYMENT TARGET: {{deployment}}
+      SECURITY ISSUES FROM PHASE 1: {{security_issues}}
+
+      Read the target architecture from Architect's workspace.
+
+      Produce:
+      1. SOC 2 Phase 2 control mapping — each Trust Service Criterion mapped to
+         a required technical implementation in the target architecture
+      2. GDPR article mapping — Articles 5, 6, 7, 17, 20, 25, 32, 33, 35 mapped
+         to data handling procedures
+      3. Gap identification — what's missing between current state and required state
+      4. Remediation plan per gap
+      5. Stress-test the target architecture for failure modes, scalability,
+         and single points of failure
+
+      Output: compliance-gap-analysis.md, architecture-review.md
+
+      Output format:
+      STATUS: done
+      SOC2_GAPS: <count>
+      GDPR_GAPS: <count>
+      ARCHITECTURE_RISKS: <count>
+      CRITICAL_FINDINGS: <count of high-severity items>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: sequence-migration
+    name: "Phase 2.3 — Sequence the Migration"
+    agent: commander
+    type: single
+    input: |
+      Phase 2 (PLAN) — Create the Migration Sequence.
+
+      BOUNDED CONTEXTS: {{bounded_contexts}}
+      DEAD CODE: {{dead_code_percent}}%
+      COMPLIANCE GAPS: SOC2={{soc2_gaps}}, GDPR={{gdpr_gaps}}
+      ARCHITECTURE RISKS: {{architecture_risks}}
+
+      Read the dependency graph, dead code report, and target architecture.
+
+      Produce an ordered migration sequence:
+      1. Each step migrates one bounded context / module group
+      2. Each step must leave the system fully functional
+      3. Account for module dependencies — migrate leaves before roots
+      4. Dead code elimination steps interleaved where beneficial
+      5. Rollback strategy per step (what to revert, estimated time)
+      6. Compliance remediation steps woven into the sequence
+
+      Output as MIGRATION_STEPS_JSON — a JSON array of objects:
+      [{"id": "step-1", "title": "...", "modules": [...], "dependencies": [...],
+        "risk": "high/medium/low", "compliance_items": [...],
+        "rollback": "...", "description": "..."}]
+
+      Output format:
+      STATUS: done
+      TOTAL_STEPS: <count>
+      ESTIMATED_DURATION: <rough timeline>
+      MIGRATION_STEPS_JSON: [...]
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: assemble-migration-plan
+    name: "Phase 2.4 — Assemble Migration Plan Package"
+    agent: documenter
+    type: single
+    input: |
+      Phase 2 (PLAN) — Assemble the customer-facing Migration Plan Package.
+
+      CUSTOMER: {{customer}}
+      ARCHITECTURE: {{architecture_pattern}}
+      TOTAL MIGRATION STEPS: {{total_steps}}
+      ESTIMATED DURATION: {{estimated_duration}}
+      COMPLIANCE GAPS: SOC2={{soc2_gaps}}, GDPR={{gdpr_gaps}}
+
+      Read all Phase 2 outputs:
+      - target-architecture.md, capability-map.md (from Architect)
+      - compliance-gap-analysis.md, architecture-review.md (from ComplianceGate)
+      - Migration sequence (from Commander)
+
+      Produce:
+      1. migration-plan.md — executive summary, architecture overview, step-by-step
+         sequence with timeline, risk mitigations, rollback strategies
+      2. compliance-matrix.md — every SOC 2 control and GDPR article mapped to:
+         current status, target implementation, responsible agent, verification method
+
+      Format for mixed audience: business stakeholders + technical leads.
+
+      Output format:
+      STATUS: done
+      PLAN_PAGES: <approximate page count>
+      COMPLIANCE_CONTROLS_TRACKED: <count>
+      READY_FOR_CUSTOMER: yes
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  # ── PHASE GATE: Customer approves Migration Plan ──
+  - id: phase2-gate
+    name: "Phase Gate — Customer Approves Migration Plan"
+    agent: commander
+    type: single
+    input: |
+      PHASE GATE: Phase 2 (PLAN) → Phase 3 (EXECUTE)
+
+      The Migration Plan Package is ready for customer review.
+      Plan: {{plan_pages}} pages, {{total_steps}} migration steps,
+      {{compliance_controls_tracked}} compliance controls tracked.
+
+      Present to the customer:
+      1. Target architecture and the reasoning behind key decisions
+      2. Migration sequence with timeline and risk mitigations
+      3. Compliance gap analysis and remediation plan
+      4. Get explicit approval before proceeding to Phase 3
+
+      THIS STEP REQUIRES HUMAN INPUT.
+
+      Output format:
+      STATUS: done
+      CUSTOMER_APPROVED: yes/no
+      PLAN_ADJUSTMENTS: <any changes requested>
+    expects: "STATUS: done"
+    on_fail:
+      max_retries: 1
+      on_exhausted:
+        escalate_to: human
+
+  # ╔══════════════════════════════════════════════════════╗
+  # ║  PHASE 3: EXECUTE (loop over migration steps)       ║
+  # ╚══════════════════════════════════════════════════════╝
+
+  - id: execute-migration
+    name: "Phase 3 — Execute Migration Steps"
+    agent: migrator
+    type: loop
+    loop:
+      over: migration_steps
+      completion: all_done
+      fresh_session: true
+      verify_each: true
+      verify_step: verify-migration-step
+    input: |
+      Phase 3 (EXECUTE) — Migrate one bounded context.
+
+      LEGACY CODEBASE: {{repo}}
+      CURRENT STEP: {{current_story}}
+      COMPLETED STEPS: {{completed_stories}}
+      REMAINING STEPS: {{stories_remaining}}
+      VERIFY FEEDBACK: {{verify_feedback}}
+      PROGRESS: {{progress}}
+
+      Follow the strangler fig pattern:
+      1. Read the characterization tests for this module (write them if missing)
+      2. Build the modernized version alongside the legacy module
+      3. Verify all characterization tests pass against the new code
+      4. Build anti-corruption layer for coexistence with remaining legacy modules
+      5. Update progress.txt with codebase patterns and migration lessons learned
+
+      Output format:
+      STATUS: done
+      CHANGES: <summary of code changes>
+      TESTS: <test results summary>
+      MODULES_MIGRATED: <list of modules in this step>
+    expects: "STATUS: done"
+    on_fail:
+      retry_step: execute-migration
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human
+
+  - id: verify-migration-step
+    name: "Phase 3 — Verify Migration Step (Compliance + Quality)"
+    agent: compliance-gate
+    type: single
+    input: |
+      Phase 3 (EXECUTE) — Verify migration step.
+
+      CHANGES MADE: {{changes}}
+      TESTS RUN: {{tests}}
+      COMPLIANCE REQUIREMENTS: {{compliance}}
+      MODULES MIGRATED: {{modules_migrated}}
+
+      Verify this migration step:
+      1. BEHAVIORAL: Do characterization tests pass against the new code?
+      2. SECURITY: OWASP Top 10 review on the changed code
+      3. COMPLIANCE: Verify against SOC 2 and GDPR compliance matrix
+      4. PERFORMANCE: No degradation vs. legacy baseline
+      5. REVERSIBILITY: Can this step be rolled back cleanly?
+
+      If ANY check fails, output STATUS: fail with specific issues.
+
+      Output format:
+      STATUS: done (or fail)
+      ISSUES: <specific issues found, if any>
+      COMPLIANCE_RESULT: pass/fail
+      SECURITY_RESULT: pass/fail
+      TESTS_RESULT: pass/fail
+    expects: "STATUS: done"
+
+  # ── Final step: Summary and customer handoff ──
+  - id: final-report
+    name: "Migration Complete — Final Report"
+    agent: documenter
+    type: single
+    input: |
+      MIGRATION COMPLETE.
+
+      CUSTOMER: {{customer}}
+      TOTAL STEPS EXECUTED: {{total_steps}}
+      COMPLIANCE: {{compliance}}
+
+      Compile the final migration report:
+      1. Executive summary of the modernization
+      2. Before/after architecture comparison
+      3. Modules migrated, dead code eliminated
+      4. Compliance verification summary
+      5. New capabilities deployed
+      6. Maintenance and operational guide for the new system
+
+      Output: final-report.md
+
+      Output format:
+      STATUS: done
+      MIGRATION_COMPLETE: yes
+    expects: "STATUS: done"
