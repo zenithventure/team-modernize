@@ -1,5 +1,22 @@
 import { getActiveRun, getSteps, getModules, getEvents, type StepRow, type EventRow } from './db.js';
 
+// Agent display name mapping
+const AGENT_DISPLAY: Record<string, { name: string; role: string }> = {
+  'legacy-mod/commander':       { name: 'Commander',      role: 'analysis' },
+  'legacy-mod/architect':       { name: 'Architect',      role: 'planning' },
+  'legacy-mod/documenter':      { name: 'Documenter',     role: 'documentation' },
+  'legacy-mod/compliance-gate': { name: 'ComplianceGate', role: 'compliance' },
+  'legacy-mod/migrator':        { name: 'Migrator',       role: 'execution' },
+};
+
+function agentDisplayName(agentId: string): string {
+  return AGENT_DISPLAY[agentId]?.name ?? agentId.replace('legacy-mod/', '');
+}
+
+function agentRole(agentId: string): string {
+  return AGENT_DISPLAY[agentId]?.role ?? '';
+}
+
 function detectPhase(steps: StepRow[]): string {
   const current = steps.find(s => s.status === 'running' || s.status === 'pending');
   if (!current) {
@@ -37,6 +54,10 @@ export function showStatus(): void {
   console.log(`Status:  ${run.status}`);
   console.log(`Phase:   ${phase}`);
   console.log(`Step:    ${current ? `${current.step_name} (${current.status})` : 'none'}`);
+  if (current) {
+    const role = agentRole(current.agent_id);
+    console.log(`Agent:   ${agentDisplayName(current.agent_id)}${role ? ` [${role}]` : ''}`);
+  }
   console.log(`Progress: ${done}/${steps.length} steps`);
   if (modules.length > 0) {
     console.log(`Modules: ${modsDone}/${modules.length} migrated`);
@@ -59,7 +80,7 @@ export function showSteps(): void {
   for (const s of steps) {
     const idx = String(s.step_index + 1).padEnd(3);
     const name = s.step_name.padEnd(45).slice(0, 45);
-    const agent = s.agent_id.replace('legacy-mod/', '').padEnd(25).slice(0, 25);
+    const agent = agentDisplayName(s.agent_id).padEnd(25).slice(0, 25);
     const status = s.status.padEnd(10);
     let duration = '—';
     if (s.started_at && s.completed_at) {

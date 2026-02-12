@@ -7,6 +7,30 @@ import { getStatusJson } from '../status.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Agent registry — hardcoded from workflow.yml (same pattern as phase detection)
+interface AgentMeta {
+  id: string;
+  name: string;
+  role: string;
+  color: string;
+  description: string;
+  model: string;
+}
+
+const AGENTS: AgentMeta[] = [
+  { id: 'legacy-mod/commander', name: 'Commander', role: 'analysis', color: '#ef4444', description: 'Team lead — triages the codebase, assigns work, and sequences the pipeline.', model: 'claude-opus-4-6' },
+  { id: 'legacy-mod/architect', name: 'Architect', role: 'planning', color: '#f59e0b', description: 'Designs the target architecture, dependency graph, and migration strategy.', model: 'claude-opus-4-6' },
+  { id: 'legacy-mod/documenter', name: 'Documenter', role: 'documentation', color: '#10b981', description: 'Generates specs, decision logs, and human-readable migration guides.', model: 'claude-opus-4-6' },
+  { id: 'legacy-mod/compliance-gate', name: 'ComplianceGate', role: 'compliance', color: '#3b82f6', description: 'Validates each module against compliance rules before promotion.', model: 'claude-opus-4-6' },
+  { id: 'legacy-mod/migrator', name: 'Migrator', role: 'execution', color: '#ef4444', description: 'Rewrites source modules to the target stack, one at a time.', model: 'claude-opus-4-6' },
+];
+
+const agentById = new Map(AGENTS.map(a => [a.id, a]));
+
+function lookupAgent(agentId: string): AgentMeta | undefined {
+  return agentById.get(agentId) ?? agentById.get('legacy-mod/' + agentId);
+}
+
 function json(res: ServerResponse, data: unknown, status = 200): void {
   res.writeHead(status, {
     'Content-Type': 'application/json',
@@ -47,6 +71,11 @@ function route(req: IncomingMessage, res: ServerResponse): void {
     return;
   }
 
+  if (path === '/api/agents') {
+    json(res, AGENTS);
+    return;
+  }
+
   if (path === '/api/runs') {
     const runs = getAllRuns();
     json(res, runs);
@@ -73,10 +102,13 @@ function route(req: IncomingMessage, res: ServerResponse): void {
           (new Date(s.completed_at + 'Z').getTime() - new Date(s.started_at + 'Z').getTime()) / 1000
         );
       }
+      const agent = lookupAgent(s.agent_id);
       return {
         step_id: s.step_id,
         step_name: s.step_name,
         agent_id: s.agent_id,
+        agent_name: agent?.name ?? s.agent_id.replace('legacy-mod/', ''),
+        agent_color: agent?.color ?? '#9ca3af',
         status: s.status,
         duration_seconds: durationSeconds,
         retry_count: s.retry_count,
