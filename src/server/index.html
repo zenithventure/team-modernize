@@ -80,6 +80,36 @@
   .execute .progress-fill { background: var(--accent-execute); }
   .phase-pct { font-size: 22px; font-weight: 700; }
 
+  /* Agent Team */
+  .agent-team { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .agent-card {
+    flex: 1; min-width: 170px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; border-left: 4px solid var(--border);
+    opacity: 0.6; transition: opacity 0.3s, box-shadow 0.3s;
+  }
+  .agent-card.active { opacity: 1; box-shadow: 0 0 0 1px var(--border); }
+  .agent-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .agent-card-name { font-size: 14px; font-weight: 600; }
+  .agent-card-role {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 1px 6px; border-radius: 4px; background: var(--bg-secondary);
+    color: var(--text-secondary); font-weight: 500;
+  }
+  .agent-card-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+  .agent-pulse {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+  .agent-team-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Step agent color dot */
+  .step-agent-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
   /* Section */
   .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
   .section h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
@@ -195,11 +225,12 @@ async function refresh() {
   currentRunId = status.run_id;
   document.getElementById('customer').textContent = status.task ? status.task.slice(0, 40) : '';
 
-  const [steps, modules, events, compliance] = await Promise.all([
+  const [steps, modules, events, compliance, agents] = await Promise.all([
     fetchJson('/api/runs/' + status.run_id + '/steps'),
     fetchJson('/api/runs/' + status.run_id + '/modules'),
     fetchJson('/api/runs/' + status.run_id + '/events'),
     fetchJson('/api/runs/' + status.run_id + '/compliance'),
+    fetchJson('/api/agents'),
   ]);
 
   // Compute phase progress
@@ -233,6 +264,25 @@ async function refresh() {
   html += '<div class="progress-bar"><div class="progress-fill" style="width:' + phasePct(phaseSteps.execute) + '%"></div></div></div>';
   html += '</div>';
 
+  // Agent Team panel
+  if (agents && agents.length > 0) {
+    const activeAgentIds = new Set((steps || []).filter(s => s.status === 'running').map(s => s.agent_id));
+    html += '<div class="agent-team-label">Agent Team</div>';
+    html += '<div class="agent-team">';
+    agents.forEach(a => {
+      const isActive = activeAgentIds.has(a.id);
+      html += '<div class="agent-card' + (isActive ? ' active' : '') + '" style="border-left-color:' + a.color + '">';
+      html += '<div class="agent-card-header">';
+      if (isActive) html += '<span class="agent-pulse" style="background:' + a.color + '"></span>';
+      html += '<span class="agent-card-name">' + a.name + '</span>';
+      html += '<span class="agent-card-role">' + a.role + '</span>';
+      html += '</div>';
+      html += '<div class="agent-card-desc">' + a.description + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
   // Metrics
   html += '<div class="metrics">';
   html += '<div class="metric-card"><div class="metric-value">' + status.steps_completed + '/' + status.steps_total + '</div><div class="metric-label">Steps</div></div>';
@@ -252,7 +302,7 @@ async function refresh() {
     html += '<div class="step-row">';
     html += '<div class="step-icon">' + icon(s.status) + '</div>';
     html += '<div class="step-name">' + s.step_name + '</div>';
-    html += '<div class="step-agent">' + s.agent_id.replace('legacy-mod/','') + '</div>';
+    html += '<div class="step-agent"><span class="step-agent-dot" style="background:' + (s.agent_color || '#9ca3af') + '"></span>' + (s.agent_name || s.agent_id.replace('legacy-mod/','')) + '</div>';
     html += '<div class="step-status ' + s.status + '">' + s.status + '</div>';
     html += '<div class="step-duration">' + dur(s.duration_seconds) + '</div>';
     html += '</div>';
