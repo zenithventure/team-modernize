@@ -194,12 +194,56 @@ The module is designed for regulated industries (financial services, healthcare,
 - **Per-step verification** — every migration step checked against the compliance matrix
 - **Audit trail** — all events logged to SQLite with timestamps
 
+## Development
+
+### Prerequisites
+
+- **Node.js 22+** (required for `node:sqlite`)
+- **TypeScript 5.7+** (dev dependency, installed via npm)
+
+### Build from source
+
+```bash
+git clone https://github.com/zenithventure/team-modernize.git
+cd team-modernize
+npm install
+npm run build
+```
+
+This compiles TypeScript to `dist/` and copies `index.html` for the dashboard. The build produces:
+
+- `dist/cli.js` — orchestrator CLI entry point
+- `dist/server/daemon.js` — dashboard daemon entry point
+
+### Project structure
+
+```
+src/
+  cli.ts              — CLI entry point, arg parsing, command routing
+  db.ts               — SQLite schema, init, query helpers
+  yaml.ts             — Minimal YAML parser (no external deps)
+  run.ts              — Run creation, step insertion, cron setup
+  step-ops.ts         — claim, complete, fail, advancePipeline, cleanup
+  gateway.ts          — OpenClaw cron/session CLI wrapper (graceful fallback)
+  template.ts         — {{variable}} resolution
+  status.ts           — status, steps, logs display
+  server/
+    dashboard.ts      — HTTP server, REST API, static file serving
+    daemon.ts         — Daemon entry point, PID file, signal handlers
+    daemonctl.ts      — Start/stop/status control
+    index.html        — Self-contained frontend (HTML + CSS + vanilla JS)
+```
+
+Zero runtime dependencies — only `node:sqlite`, `node:http`, `node:fs`, `node:path`, `node:crypto`, `node:child_process`.
+
 ## Project Status
 
-**Current state: Complete design spec.** The agent personas, skills, workflow pipeline, and setup script are written and working. The orchestrator CLI and dashboard are spec'd ([ORCHESTRATOR.md](workflows/legacy-mod/ORCHESTRATOR.md), [DASHBOARD.md](workflows/legacy-mod/DASHBOARD.md)) and ready for implementation.
+**Current state: Fully implemented.** The orchestrator CLI, dashboard, agent personas, skills, workflow pipeline, and setup script are all written and working.
 
-### What's ready
+### What's included
 
+- Orchestrator CLI with SQLite-backed pipeline state (~1800 lines TypeScript)
+- Web dashboard with phase timeline, module tracker, and compliance matrix
 - Agent persona files (SOUL, AGENTS, IDENTITY) for all 5 workflow agents
 - 7 skill definitions with detailed protocols
 - 13-step workflow.yml pipeline definition
@@ -207,11 +251,6 @@ The module is designed for regulated industries (financial services, healthcare,
 - `openclaw.json` with role-based tool enforcement
 - Vision template for customer engagements
 - Main-agent guidance injection (TOOLS.md + AGENTS.md blocks)
-
-### What needs implementation
-
-- Orchestrator CLI (~500 lines TypeScript)
-- Dashboard server + frontend (~600 lines)
 
 ## Acknowledgments
 
