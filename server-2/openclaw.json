@@ -1,0 +1,63 @@
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    },
+    "list": [
+      {
+        "id": "red-commander",
+        "name": "Commander",
+        "workspace": "~/.openclaw/workspace-red-commander",
+        "subagents": {
+          "allowAgents": ["*"]
+        }
+      },
+      {
+        "id": "yellow-spark",
+        "name": "Spark",
+        "workspace": "~/.openclaw/workspace-yellow-spark",
+        "subagents": {
+          "allowAgents": ["*"]
+        }
+      },
+      {
+        "id": "green-anchor",
+        "name": "Anchor",
+        "workspace": "~/.openclaw/workspace-green-anchor",
+        "subagents": {
+          "allowAgents": ["*"]
+        }
+      },
+      {
+        "id": "blue-lens",
+        "name": "Lens",
+        "workspace": "~/.openclaw/workspace-blue-lens",
+        "subagents": {
+          "allowAgents": ["*"]
+        }
+      }
+    ]
+  },
+  "tools": {
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "red-commander",
+        "yellow-spark",
+        "green-anchor",
+        "blue-lens"
+      ]
+    }
+  },
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/skills"]
+    }
+  }
+}
