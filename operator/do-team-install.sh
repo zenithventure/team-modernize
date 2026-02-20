@@ -70,7 +70,7 @@ echo -e "${GREEN}✓ Execution policies unlocked${NC}"
 echo -e "${YELLOW}[3/5] Injecting team configuration into sandbox...${NC}"
 
 # Find the running OpenClaw container
-CONTAINER_ID=$(docker ps -q -f "ancestor=openclaw-sandbox:*" | head -1)
+CONTAINER_ID=$(docker ps -q -f "name=openclaw-sbx" | head -1)
 if [[ -z "$CONTAINER_ID" ]]; then
     echo -e "${RED}ERROR: No OpenClaw sandbox container found.${NC}"
     echo "Try restarting: systemctl restart openclaw"
