@@ -1,62 +1,27 @@
 #!/usr/bin/env bash
 
-# =============================================================
-# Environment Detection
-# =============================================================
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
-    echo "For DO installation, use: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-if [[ "${1:-}" == "--help" ]]; then
-    echo "Setup script for bare-metal / self-hosted OpenClaw"
-    echo "On DigitalOcean: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-
 # ============================================================
 # OpenClaw Team Setup — AI Product Builder Edition
 # ============================================================
-# Deploys a team of 4 agents representing a modern AI-first
-# developer who has mastered the full 6-week curriculum:
-# spec-first development, trunk-based workflows, CI/CD,
-# Supabase, Vercel, Stripe, mobile, and team mode.
-#
 # Usage:
 #   ./setup.sh                    # Interactive setup
 #   ./setup.sh --clean            # Wipe and reinstall
 #   ./setup.sh --uninstall        # Remove everything
 #   ./setup.sh --vision "text"    # Set the vision inline
-#
-# One-liner install:
-#   curl -sL <url>/setup.sh | bash
-#   — or —
-#   git clone <repo> /tmp/aipb-openclaw && /tmp/aipb-openclaw/setup.sh
-#
-# After running:
-#   1. Edit shared/VISION.md with your project mission
-#   2. Update USER.md in each agent workspace with your info
-#   3. Set API keys in ~/.openclaw/.env
-#   4. Run: openclaw start
+#   ./setup.sh --help             # Show help
 # ============================================================
 
-# =============================================================
-# Environment Detection
-# =============================================================
-# Check if running on DigitalOcean OpenClaw droplet
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
+if [[ "${1:-}" == "--help" ]]; then
+    echo "Setup script for Product Builder team (bare-metal / self-hosted OpenClaw)"
     echo ""
-    echo "For DO installation, use the dedicated script:"
-    echo "  sudo bash do-team-install.sh product-builder"
-    echo ""
-    echo "This setup.sh is for bare-metal / self-hosted OpenClaw installations."
+    echo "Usage:"
+    echo "  ./setup.sh                    # Interactive setup"
+    echo "  ./setup.sh --clean            # Wipe and reinstall"
+    echo "  ./setup.sh --uninstall        # Remove everything"
+    echo "  ./setup.sh --vision \"text\"    # Set the vision inline"
     exit 0
 fi
 
-# Handle --help flag
-if [[ "${1:-}" == "--help" ]]; then
-    echo "Setup script for Product
 set -euo pipefail
 
 # ── Colors ─────────────────────────────────────────────────

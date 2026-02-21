@@ -1,67 +1,22 @@
 #!/usr/bin/env bash
 
-# =============================================================
-# Environment Detection
-# =============================================================
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
-    echo "For DO installation, use: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-if [[ "${1:-}" == "--help" ]]; then
-    echo "Setup script for bare-metal / self-hosted OpenClaw"
-    echo "On DigitalOcean: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-
 # ============================================================
-# OpenClaw Legacy Modernization Module — One-Line Installer
+# OpenClaw Team Setup — Legacy Modernizer Edition
 # ============================================================
-# Installs the legacy-mod workflow on any vanilla OpenClaw setup.
-#
 # Usage:
-#   git clone <repo> ~/.openclaw/workspace/legacy-mod && ~/.openclaw/workspace/legacy-mod/setup.sh
-#
-# Or tell your OpenClaw agent:
-#   "Clone and install the legacy modernization module from <repo>"
-#
-# What this script does:
-#   1. Verifies OpenClaw is installed
-#   2. Provisions agent workspaces with persona files
-#   3. Registers workflow agents in openclaw.json (with role-based tool policies)
-#   4. Installs skills into ~/.openclaw/skills/
-#   5. Injects guidance into the main agent's TOOLS.md and AGENTS.md
-#   6. Builds the orchestrator CLI
-#   7. Creates the CLI symlink
-#   8. Prints usage instructions
-#
-# To uninstall:
-#   ./setup.sh --uninstall
+#   ./setup.sh                    # Interactive setup
+#   ./setup.sh --clean            # Wipe and reinstall
+#   ./setup.sh --uninstall        # Remove everything
+#   ./setup.sh --help             # Show help
 # ============================================================
 
-# =============================================================
-# Environment Detection
-# =============================================================
-# Check if running on DigitalOcean OpenClaw droplet
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
-    echo ""
-    echo "For DO installation, use the dedicated script:"
-    echo "  sudo bash do-team-install.sh modernizer"
-    echo ""
-    echo "This setup.sh is for bare-metal / self-hosted OpenClaw installations."
-    exit 0
-fi
-
-# Handle --help flag
 if [[ "${1:-}" == "--help" ]]; then
     echo "Setup script for Modernizer team (bare-metal / self-hosted)"
     echo ""
-    echo "If you're on DigitalOcean:"
-    echo "  sudo bash do-team-install.sh modernizer"
-    echo ""
-    echo "If you're running OpenClaw on your own infrastructure:"
-    echo "  ./setup.sh [options]"
+    echo "Usage:"
+    echo "  ./setup.sh                    # Interactive setup"
+    echo "  ./setup.sh --clean            # Wipe and reinstall"
+    echo "  ./setup.sh --uninstall        # Remove everything"
     echo ""
     echo "Options:"
     echo "  --clean     Wipe and reinstall all agents"

@@ -1,63 +1,24 @@
 #!/usr/bin/env bash
 
-# =============================================================
-# Environment Detection
-# =============================================================
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
-    echo "For DO installation, use: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-if [[ "${1:-}" == "--help" ]]; then
-    echo "Setup script for bare-metal / self-hosted OpenClaw"
-    echo "On DigitalOcean: sudo bash do-team-install.sh TEAM_NAME"
-    exit 0
-fi
-
 # ============================================================
-# OpenClaw Team Setup — "Surrounded by Idiots" Edition
+# OpenClaw Team Setup — Operator Edition
 # ============================================================
-# Deploys a team of 4 DISC-personality agents to ~/.openclaw/
-#
 # Usage:
 #   ./setup.sh                    # Interactive setup
 #   ./setup.sh --clean            # Wipe and reinstall
+#   ./setup.sh --uninstall        # Remove everything
 #   ./setup.sh --vision "text"    # Set the vision inline
-#
-# After running, configure:
-#   1. Edit shared/VISION.md with your mission
-#   2. Set your timezone in each agent's USER.md
-#   3. Uncomment your channel in openclaw.json
-#   4. Set API keys in ~/.openclaw/.env
+#   ./setup.sh --help             # Show help
 # ============================================================
 
-# =============================================================
-# Environment Detection
-# =============================================================
-# Check if running on DigitalOcean OpenClaw droplet
-if [[ -f /opt/openclaw-cli.sh ]]; then
-    echo "DigitalOcean OpenClaw detected."
-    echo ""
-    echo "For DO installation, use the dedicated script:"
-    echo "  sudo bash do-team-install.sh operator"
-    echo ""
-    echo "This setup.sh is for bare-metal / self-hosted OpenClaw installations."
-    exit 0
-fi
-
-# Handle --help flag
 if [[ "${1:-}" == "--help" ]]; then
     echo "Setup script for Operator team (bare-metal / self-hosted)"
     echo ""
-    echo "If you're on DigitalOcean:"
-    echo "  sudo bash do-team-install.sh operator"
-    echo ""
-    echo "If you're running OpenClaw on your own infrastructure:"
-    echo "  ./setup.sh [options]"
-    echo ""
-    echo "Options:"
-    echo "  --clean     Wipe and reinstall all agents"
-    echo "  --uninstall Remove the team completely"
+    echo "Usage:"
+    echo "  ./setup.sh                    # Interactive setup"
+    echo "  ./setup.sh --clean            # Wipe and reinstall"
+    echo "  ./setup.sh --uninstall        # Remove everything"
+    echo "  ./setup.sh --vision \"text\"    # Set the vision inline"
     exit 0
 fi
 
