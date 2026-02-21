@@ -127,7 +127,7 @@ echo -e "${GREEN}✓ OpenClaw restarted${NC}"
 echo -e "${YELLOW}[5/5] Verifying installation...${NC}"
 
 # Check that agents are configured
-AGENT_COUNT=$(grep -c '"name"' "./openclaw.json" || echo "0")
+AGENT_COUNT=$(grep -c '"name"' "$TEAM_DIR/openclaw.json" || echo "0")
 echo "  Agents configured: $AGENT_COUNT"
 
 echo -e "${GREEN}✓ Installation complete!${NC}"
