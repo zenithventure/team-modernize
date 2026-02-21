@@ -91,29 +91,15 @@ if [[ ! -d "$TEAM_DIR" ]]; then
     exit 1
 fi
 
-# Ensure destination directories exist inside the container
-docker exec -u root "$CONTAINER_ID" mkdir -p /workspace/agents /workspace/shared
-docker exec -u root "$CONTAINER_ID" chown -R 1000:1000 /workspace/agents /workspace/shared
-
-# Copy the team's openclaw.json into the sandbox workspace
+# Copy team files into the sandbox (docker cp runs as daemon, no mkdir needed)
 echo "  Copying team configuration..."
 docker cp "$TEAM_DIR/openclaw.json" "$CONTAINER_ID:/workspace/openclaw.json"
 
-# Copy team skills
-echo "  Copying team skills..."
-docker cp "$TEAM_DIR/shared/skills" "$CONTAINER_ID:/workspace/shared/"
+echo "  Copying shared resources..."
+docker cp "$TEAM_DIR/shared" "$CONTAINER_ID:/workspace/shared"
 
-# Copy agent definitions
 echo "  Copying agent definitions..."
-for agent_dir in "$TEAM_DIR"/agents/*/; do
-    agent_name=$(basename "$agent_dir")
-    docker cp "$agent_dir" "$CONTAINER_ID:/workspace/agents/$agent_name"
-done
-
-# Copy shared context
-echo "  Copying shared context..."
-docker cp "$TEAM_DIR/shared/VISION.md" "$CONTAINER_ID:/workspace/shared/VISION.md"
-docker cp "$TEAM_DIR/shared/standup-log.md" "$CONTAINER_ID:/workspace/shared/standup-log.md" 2>/dev/null || true
+docker cp "$TEAM_DIR/agents" "$CONTAINER_ID:/workspace/agents"
 
 echo -e "${GREEN}✓ Team configuration injected${NC}"
 
