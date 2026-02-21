@@ -98,7 +98,17 @@ else
 fi
 
 echo "  Copying shared resources..."
-cp -r "$TEAM_DIR/shared" "$OPENCLAW_DIR/shared"
+mkdir -p "$OPENCLAW_DIR/shared"
+cp -r "$TEAM_DIR/shared/." "$OPENCLAW_DIR/shared/"
+
+# Clean up stale agents dir from previous install attempts
+if [[ -d "$OPENCLAW_DIR/agents/agents" ]]; then
+    rm -rf "$OPENCLAW_DIR/agents/agents"
+fi
+for agent_dir in "$TEAM_DIR"/agents/*/; do
+    agent_id=$(basename "$agent_dir")
+    rm -rf "$OPENCLAW_DIR/agents/$agent_id"
+done
 
 echo "  Setting up agent workspaces..."
 for agent_dir in "$TEAM_DIR"/agents/*/; do
