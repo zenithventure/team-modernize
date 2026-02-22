@@ -427,6 +427,13 @@ create_openclaw_user
 install_nodejs
 install_openclaw
 detect_openclaw_binary
+
+# Symlink into /usr/local/bin so all users can run `openclaw`
+if [[ -n "$OPENCLAW_BIN" && ! -e /usr/local/bin/openclaw ]]; then
+    ln -s "$OPENCLAW_BIN" /usr/local/bin/openclaw
+    log_ok "Symlinked openclaw → /usr/local/bin/openclaw"
+fi
+
 create_systemd_service
 
 log_ok "Phase 2 complete — OpenClaw installed"
