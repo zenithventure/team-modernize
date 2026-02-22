@@ -178,7 +178,7 @@ echo ""
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
 if [[ $TOTAL_RAM_MB -lt 2048 ]]; then
-    log_warn "Low memory: ${TOTAL_RAM_MB}MB detected (minimum recommended: 2048MB)"
+    log_warn "Low memory: ${TOTAL_RAM_MB}MB detected (minimum recommended: 2048MB) — swap will be added"
 fi
 
 # ============================================================
@@ -277,6 +277,19 @@ configure_firewall
 configure_fail2ban
 
 log_ok "Phase 1 complete — server hardened"
+
+# ── Swap file (prevents OOM on ≤2 GB droplets) ──────────────
+if ! swapon --show | grep -q /swapfile; then
+    log_step "  Creating 2 GB swap file..."
+    fallocate -l 2G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile > /dev/null
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    log_ok "2 GB swap enabled"
+else
+    log_ok "Swap already active — skipping"
+fi
 
 # ============================================================
 # Phase 2/5 — OpenClaw Installation
