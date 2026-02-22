@@ -8,7 +8,7 @@ Install any team on a machine already running [OpenClaw](https://docs.openclaw.a
 
 ```bash
 git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams \
-  && bash /tmp/openclaw-teams/product-builder/setup.sh
+  && bash /tmp/openclaw-teams/operator/setup.sh
 ```
 
 Then:
@@ -24,9 +24,13 @@ Deploy any team to a fresh Ubuntu 24.04 droplet with a single command. The boots
 
 ```bash
 ssh root@YOUR_DROPLET_IP
+```
 
+Then run:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --team product-builder
+  | bash -s -- --team operator
 ```
 
 See [DO-SETUP.md](DO-SETUP.md) for full options (`--domain`, `--api-key`, `--user`, etc.) and details.
