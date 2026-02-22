@@ -403,7 +403,7 @@ Group=openclaw
 WorkingDirectory=${OPENCLAW_HOME}
 Environment=HOME=${OPENCLAW_HOME}
 Environment=NODE_ENV=production
-ExecStart=${OPENCLAW_BIN} gateway run
+ExecStart=${OPENCLAW_BIN} gateway run --allow-unconfigured
 Restart=on-failure
 RestartSec=5
 
