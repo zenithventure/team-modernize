@@ -438,6 +438,7 @@ clone_repo() {
 
     CLONE_DIR=$(mktemp -d)
     git clone --depth 1 "$REPO_URL" "$CLONE_DIR" > /dev/null 2>&1
+    chown -R openclaw:openclaw "$CLONE_DIR"
     log_ok "Cloned to ${CLONE_DIR}"
 }
 
