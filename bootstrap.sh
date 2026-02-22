@@ -243,7 +243,7 @@ configure_ssh() {
     # Disable password auth
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' "$sshd_config"
 
-    systemctl restart sshd
+    systemctl restart ssh 2>/dev/null || systemctl restart sshd
     log_ok "SSH hardened (root key-only, password auth disabled)"
 }
 
