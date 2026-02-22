@@ -307,7 +307,7 @@ create_openclaw_user() {
     if id openclaw &>/dev/null; then
         log_ok "User openclaw already exists"
     else
-        useradd --system --create-home --home-dir "$OPENCLAW_HOME" --shell /usr/sbin/nologin openclaw
+        useradd --system --create-home --home-dir "$OPENCLAW_HOME" --shell /bin/bash openclaw
         log_ok "Created system user: openclaw"
     fi
 }
