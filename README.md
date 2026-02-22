@@ -2,18 +2,49 @@
 
 A collection of [OpenClaw](https://openclaw.ai) multi-agent team configurations, each designed for a different class of work. Every team is self-contained with its own agents, skills, shared context, and setup script.
 
+## Quick Start
+
+Install any team on a machine already running [OpenClaw](https://docs.openclaw.ai):
+
+```bash
+git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams \
+  && bash /tmp/openclaw-teams/product-builder/setup.sh
+```
+
+Then:
+
+1. Edit `~/.openclaw/shared/VISION.md` with your mission and constraints
+2. Update `USER.md` in each agent's workspace with your information
+3. Set your API key in `~/.openclaw/.env`
+4. Run `openclaw start`
+
+## Deploy to DigitalOcean
+
+Deploy any team to a fresh Ubuntu 24.04 droplet with a single command. The bootstrap script handles server hardening, Node.js, OpenClaw installation, team deployment, TLS via Caddy, and systemd — all in one shot.
+
+```bash
+ssh root@YOUR_DROPLET_IP
+
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
+  | bash -s -- --team product-builder
+```
+
+See [DO-SETUP.md](DO-SETUP.md) for full options (`--domain`, `--api-key`, `--user`, etc.) and details.
+
 ## Teams
 
 | Folder | Team | Agents | Purpose |
 |--------|------|--------|---------|
-| [`modernizer/`](modernizer/) | Legacy Modernizer | Commander, Architect, Documenter, ComplianceGate, Migrator¹ | Modernize legacy applications through a phased, compliance-aware pipeline (LEARN → PLAN → EXECUTE) |
-| [`product-builder/`](product-builder/) | Product Builder | Architect, Builder, Ops, QA | Build products from idea to production using spec-first development, trunk-based workflows, and CI/CD |
-| [`operator/`](operator/) | Operator | Commander, Spark, Anchor, Lens | Design, build, and operate an autonomous business that generates recurring revenue |
-| [`accountant/`](accountant/) | Accountant | Controller, Bookkeeper, Reporter, Tax Prep | AI-powered back-office accounting for small businesses — categorize, reconcile, report, and track taxes |
-| [`recruiter/`](recruiter/) | Recruiter | Headhunter, Interviewer, Coordinator, Compliance | AI-powered recruiting team — source, screen, interview, and hire with built-in bias detection |
-| [`real-estate/`](real-estate/) | Real Estate | Deal Maker, Analyst, Coordinator, Underwriter | AI deal desk for real estate — comps, financial review, due diligence, and pipeline management |
+| [`accountant/`](accountant/) | [Accountant](accountant/README.md) | Controller, Bookkeeper, Reporter, Tax Prep | AI-powered back-office accounting — categorize, reconcile, report, and track taxes |
+| [`modernizer/`](modernizer/) | [Legacy Modernizer](modernizer/README.md) | Commander, Architect, Documenter, ComplianceGate, Migrator¹ | Modernize legacy applications through a phased, compliance-aware pipeline (LEARN → PLAN → EXECUTE) |
+| [`operator/`](operator/) | [Operator](operator/README.md) | Commander, Spark, Anchor, Lens | Design, build, and operate an autonomous business that generates recurring revenue |
+| [`product-builder/`](product-builder/) | [Product Builder](product-builder/README.md) | Architect, Builder, Ops, QA | Build products from idea to production using spec-first development and CI/CD |
+| [`real-estate/`](real-estate/) | [Real Estate](real-estate/README.md) | Deal Maker, Analyst, Coordinator, Underwriter | AI deal desk — comps, financial review, due diligence, and pipeline management |
+| [`recruiter/`](recruiter/) | [Recruiter](recruiter/README.md) | Headhunter, Interviewer, Coordinator, Compliance | AI-powered recruiting — source, screen, interview, and hire with built-in bias detection |
 
-¹ **Modernizer agent mapping:** The modernizer has 5 logical agents but 4 agent directories (`red-commander`, `blue-lens`, `yellow-spark`, `green-anchor`). The 5th agent (Migrator) reuses `red-commander`'s directory, as Commander transitions into the Migrator role during the EXECUTE phase. See the [modernizer README](modernizer/) for details.
+¹ **Modernizer agent mapping:** The modernizer has 5 logical agents but 4 agent directories (`red-commander`, `blue-lens`, `yellow-spark`, `green-anchor`). The 5th agent (Migrator) reuses `red-commander`'s directory, as Commander transitions into the Migrator role during the EXECUTE phase. See the [modernizer README](modernizer/README.md) for details.
+
+Most teams ship example VISIONs in their `examples/` folder — copy one to `~/.openclaw/shared/VISION.md` as a starting point.
 
 ## Common Structure
 
@@ -35,38 +66,18 @@ team-name/
   skills/                # Team-specific skill definitions (if any)
 ```
 
-## One-Line Install
+## Setup Options
 
-Pick a team and install it on any machine running [OpenClaw](https://docs.openclaw.ai):
+Every team's `setup.sh` supports the same interface. Replace `<team>` with any team name:
 
 ```bash
-# Product Builder
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/product-builder/setup.sh
-
-# Accountant
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/accountant/setup.sh
-
-# Recruiter
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/recruiter/setup.sh
-
-# Real Estate
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/real-estate/setup.sh
-
-# Modernizer
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/modernizer/setup.sh
-
-# Operator
-git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams && bash /tmp/openclaw-teams/operator/setup.sh
+git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/openclaw-teams \
+  && bash /tmp/openclaw-teams/<team>/setup.sh
 ```
 
-### After install
+Available teams: `accountant`, `modernizer`, `operator`, `product-builder`, `real-estate`, `recruiter`
 
-1. Edit `~/.openclaw/shared/VISION.md` with your mission and constraints
-2. Update `USER.md` in each agent's workspace with your information
-3. Set your API key in `~/.openclaw/.env`
-4. Run `openclaw start`
-
-### Options
+### Flags
 
 ```bash
 ./setup.sh --vision "Build a SaaS for ..."   # Set vision inline
@@ -74,18 +85,14 @@ git clone https://github.com/zenithventure/openclaw-agent-teams.git /tmp/opencla
 ./setup.sh --uninstall                         # Remove everything
 ```
 
-## Deploy to DigitalOcean
+## Customization
 
-Deploy any team to a fresh Ubuntu 24.04 droplet with a single command. The bootstrap script handles server hardening, Node.js, OpenClaw installation, team deployment, TLS via Caddy, and systemd — all in one shot.
+After installing a team, the main files to tailor are:
 
-```bash
-ssh root@YOUR_DROPLET_IP
-
-curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --team product-builder
-```
-
-See [DO-SETUP.md](DO-SETUP.md) for full options (`--domain`, `--api-key`, `--user`, etc.) and details.
+- **`~/.openclaw/shared/VISION.md`** — your mission, success criteria, constraints, and priorities. This is the most important file; every agent reads it.
+- **`~/.openclaw/agents/*/USER.md`** — information about the human operator (you). Each agent has its own copy.
+- **`~/.openclaw/agents/*/SOUL.md`** — personality and communication style. Tweak if you want a different tone.
+- **`~/.openclaw/skills/`** — add or modify team skills to extend what agents can do.
 
 ## License
 
