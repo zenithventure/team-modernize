@@ -192,7 +192,7 @@ install_packages() {
     log_step "  Installing system packages..."
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq curl vim git ufw make jq fail2ban ca-certificates gnupg > /dev/null
+    apt-get install -y -qq curl vim git ufw build-essential python3 jq fail2ban ca-certificates gnupg > /dev/null
     log_ok "System packages installed"
 }
 
