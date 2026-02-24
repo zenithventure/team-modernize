@@ -33,23 +33,17 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
   | bash -s -- --domain example.com
 ```
 
-#### Step 2 — Install OpenClaw + onboard (as openclaw user, interactive)
+#### Step 2 — Install OpenClaw, onboard, and deploy team (as openclaw user)
 
 ```bash
 sudo -u openclaw -i
 curl -fsSL https://openclaw.ai/install.sh | bash
 openclaw onboard
-exit
-```
-
-This is interactive — you'll choose your messaging channel, enter your Telegram/Discord token, etc.
-
-#### Step 3 — Deploy team (as root)
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
   | bash -s -- --team operator --api-key sk-ant-...
 ```
+
+The `openclaw onboard` step is interactive — you'll choose your messaging channel, enter your Telegram/Discord token, etc. Everything else is automated.
 
 Done! Your team is deployed and ready to go.
 
@@ -70,6 +64,8 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 | `--domain <fqdn>` | Domain for Let's Encrypt TLS | Self-signed via IP |
 
 ## install-team.sh Options
+
+Run as the `openclaw` user (after `sudo -u openclaw -i`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
@@ -102,13 +98,9 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 2. **OpenClaw Prep** — creates an `openclaw` user with systemd lingering, installs Node.js 22.x
 3. **Reverse Proxy** — installs Caddy, provisions TLS (Let's Encrypt with `--domain`, self-signed without), reverse proxies to the gateway
 
-### Step 2: OpenClaw install + onboard (manual)
+### Step 2: OpenClaw install + onboard + team deploy (as openclaw user)
 
-You install OpenClaw and run the interactive onboarding as the `openclaw` user. This lets you choose your messaging channel and enter tokens interactively.
-
-### Step 3: install-team.sh
-
-Clones this repo, runs the team's `setup.sh`, configures the API key in `.env`, and fixes file ownership.
+You switch to the `openclaw` user, install OpenClaw, run the interactive onboarding (choose messaging channel, enter tokens), then run `install-team.sh` which clones this repo, runs the team's `setup.sh`, and configures the API key in `.env`.
 
 ## After Deployment
 

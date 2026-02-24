@@ -4,7 +4,7 @@
 # OpenClaw Team Installer
 # ============================================================
 # Deploys an agent team into an existing OpenClaw installation.
-# Run this after bootstrap.sh + OpenClaw install + onboard.
+# Run as the openclaw user after install + onboard.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
@@ -125,31 +125,16 @@ if [[ "$TEAM_VALID" != true ]]; then
     exit 1
 fi
 
-# Must be root
-if [[ "$(id -u)" -ne 0 ]]; then
-    log_err "This script must be run as root"
-    exit 1
-fi
-
-# Verify openclaw user exists
-if ! id openclaw &>/dev/null; then
-    log_err "User 'openclaw' does not exist. Run bootstrap.sh first."
-    exit 1
-fi
-
-OPENCLAW_HOME="/home/openclaw"
-OPENCLAW_DIR="${OPENCLAW_HOME}/.openclaw"
-
 # Verify OpenClaw is installed
-if ! sudo -u openclaw -H bash -c 'command -v openclaw' &>/dev/null; then
-    log_err "OpenClaw binary not found for user 'openclaw'."
+if ! command -v openclaw &>/dev/null; then
+    log_err "OpenClaw binary not found."
     echo "  Install it first:"
-    echo "    sudo -u openclaw -i"
     echo "    curl -fsSL https://openclaw.ai/install.sh | bash"
     echo "    openclaw onboard"
-    echo "    exit"
     exit 1
 fi
+
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/.openclaw}"
 
 # ── Preflight ──────────────────────────────────────────────
 
@@ -174,7 +159,6 @@ clone_repo() {
 
     CLONE_DIR=$(mktemp -d)
     git clone --depth 1 "$REPO_URL" "$CLONE_DIR" > /dev/null 2>&1
-    chown -R openclaw:openclaw "$CLONE_DIR"
     log_ok "Cloned to ${CLONE_DIR}"
 }
 
@@ -187,7 +171,7 @@ run_team_setup() {
         exit 1
     fi
 
-    sudo -u openclaw -H bash "${CLONE_DIR}/${TEAM}/setup.sh"
+    bash "${CLONE_DIR}/${TEAM}/setup.sh"
     log_ok "Team setup complete"
 }
 
@@ -212,26 +196,15 @@ configure_api_key() {
         fi
 
         chmod 600 "$env_file"
-        chown openclaw:openclaw "$env_file"
         log_ok "API key configured"
     else
         log_warn "No --api-key provided — edit ${OPENCLAW_DIR}/.env later"
     fi
 }
 
-# ── Fix ownership ──────────────────────────────────────────
-fix_ownership() {
-    log_step "  Fixing file ownership..."
-
-    chown -R openclaw:openclaw "${OPENCLAW_DIR}"
-    chown -R openclaw:openclaw "${OPENCLAW_HOME}"
-    log_ok "Ownership set to openclaw:openclaw"
-}
-
 clone_repo
 run_team_setup
 configure_api_key
-fix_ownership
 
 # ============================================================
 # Summary
@@ -249,18 +222,17 @@ if [[ -n "$API_KEY" ]]; then
 else
     echo -e "  ${YELLOW}!${NC} API key not set — edit ${OPENCLAW_DIR}/.env"
 fi
-echo -e "  ${GREEN}✓${NC} File ownership set to openclaw:openclaw"
 echo ""
 echo -e "${BOLD}Next steps:${NC}"
 echo ""
 echo -e "  1. ${YELLOW}Start the gateway:${NC}"
-echo -e "     sudo -u openclaw -i openclaw gateway start"
+echo -e "     openclaw gateway start"
 echo ""
 echo -e "  2. ${YELLOW}Edit your vision:${NC}"
-echo -e "     sudo -u openclaw nano ${OPENCLAW_DIR}/shared/VISION.md"
+echo -e "     nano ${OPENCLAW_DIR}/shared/VISION.md"
 echo ""
 echo -e "  ${DIM}•${NC} Service management:"
-echo -e "     sudo -u openclaw -i openclaw gateway status"
-echo -e "     sudo -u openclaw -i openclaw gateway restart"
-echo -e "     sudo -u openclaw -i openclaw gateway logs"
+echo -e "     openclaw gateway status"
+echo -e "     openclaw gateway restart"
+echo -e "     openclaw gateway logs"
 echo ""
