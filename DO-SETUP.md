@@ -29,21 +29,24 @@ ssh root@YOUR_DROPLET_IP
 Hardens the server, creates users, installs Node.js, and sets up Caddy for TLS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --domain example.com
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh | bash -s
 ```
 
-#### Step 2 — Install OpenClaw, onboard, and deploy team (as openclaw user)
+#### Step 2 — Install OpenClaw (as openclaw user)
 
 ```bash
 sudo -u openclaw -i
 curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard
-curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
-  | bash -s -- --team operator --api-key sk-ant-...
 ```
 
-The `openclaw onboard` step is interactive — you'll choose your messaging channel, enter your Telegram/Discord token, etc. Everything else is automated.
+The installer runs onboarding automatically — you'll choose your messaging channel, enter your Telegram/Discord token, API key, etc.
+
+#### Step 3 — Deploy team (still as openclaw user)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
+  | bash -s -- --team operator
+```
 
 Done! Your team is deployed and ready to go.
 
@@ -77,7 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--team <name>` | **Required.** Team to deploy | — |
-| `--api-key <key>` | Anthropic API key | Leave `.env` as template |
+| `--api-key <key>` | Anthropic API key (usually set during onboarding) | Leave `.env` as-is |
 
 ## Available Teams
 
@@ -98,9 +101,13 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 2. **OpenClaw Prep** — creates an `openclaw` user with systemd lingering, installs Node.js 22.x
 3. **Reverse Proxy** — installs Caddy, provisions TLS (Let's Encrypt with `--domain`, self-signed without), reverse proxies to the gateway
 
-### Step 2: OpenClaw install + onboard + team deploy (as openclaw user)
+### Step 2: OpenClaw install (as openclaw user)
 
-You switch to the `openclaw` user, install OpenClaw, run the interactive onboarding (choose messaging channel, enter tokens), then run `install-team.sh` which clones this repo, runs the team's `setup.sh`, and configures the API key in `.env`.
+You switch to the `openclaw` user and install OpenClaw. The installer runs onboarding automatically — you'll choose your messaging channel, enter tokens, and set your API key.
+
+### Step 3: Team deploy (as openclaw user)
+
+Run `install-team.sh` which clones this repo, runs the team's `setup.sh`, and deploys agent workspaces and skills.
 
 ## After Deployment
 
@@ -151,7 +158,6 @@ Make sure you installed as the `openclaw` user:
 ```bash
 sudo -u openclaw -i
 curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard
 ```
 
 ### install-team.sh says "openclaw binary not found"

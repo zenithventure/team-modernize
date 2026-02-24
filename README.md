@@ -20,7 +20,7 @@ Then:
 
 ## Deploy to DigitalOcean
 
-Two steps take a bare Ubuntu 24.04 droplet from **zero to a fully hardened, TLS-terminated, production-ready OpenClaw instance** with your agent team deployed.
+Three steps take a bare Ubuntu 24.04 droplet from **zero to a fully hardened, TLS-terminated, production-ready OpenClaw instance** with your agent team deployed.
 
 ```bash
 ssh root@YOUR_DROPLET_IP
@@ -29,21 +29,24 @@ ssh root@YOUR_DROPLET_IP
 **Step 1 — Server prep (as root):**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --domain example.com
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh | bash -s
 ```
 
-**Step 2 — Install OpenClaw, onboard, and deploy team (as openclaw user):**
+**Step 2 — Install OpenClaw (as openclaw user):**
 
 ```bash
 sudo -u openclaw -i
 curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard
-curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
-  | bash -s -- --team operator --api-key sk-ant-...
 ```
 
-Both steps are idempotent — safe to run again if interrupted. See [DO-SETUP.md](DO-SETUP.md) for full options and details.
+**Step 3 — Deploy team (still as openclaw user):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
+  | bash -s -- --team operator
+```
+
+All steps are idempotent — safe to run again if interrupted. See [DO-SETUP.md](DO-SETUP.md) for full options and details.
 
 ## Teams
 
