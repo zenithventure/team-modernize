@@ -307,16 +307,25 @@ log_step "[2/5] Installing OpenClaw..."
 OPENCLAW_HOME="/home/openclaw"
 OPENCLAW_DIR="${OPENCLAW_HOME}/.openclaw"
 
-# ── Create openclaw system user ────────────────────────────
+# ── Create openclaw user ──────────────────────────────────
 create_openclaw_user() {
-    log_step "  Creating openclaw system user..."
+    log_step "  Creating openclaw user..."
 
     if id openclaw &>/dev/null; then
         log_ok "User openclaw already exists"
     else
-        useradd --system --create-home --home-dir "$OPENCLAW_HOME" --shell /bin/bash openclaw
-        log_ok "Created system user: openclaw"
+        useradd --create-home --home-dir "$OPENCLAW_HOME" --shell /bin/bash openclaw
+        log_ok "Created user: openclaw"
     fi
+
+    # Enable lingering so systemd user services survive logout
+    loginctl enable-linger openclaw
+    OPENCLAW_UID=$(id -u openclaw)
+    mkdir -p "/run/user/${OPENCLAW_UID}"
+    chown openclaw:openclaw "/run/user/${OPENCLAW_UID}"
+    chmod 700 "/run/user/${OPENCLAW_UID}"
+    systemctl start "user@${OPENCLAW_UID}.service"
+    log_ok "Lingering enabled, systemd user session started"
 
     # Ensure npm global bin is on PATH for interactive shells
     local bashrc="${OPENCLAW_HOME}/.bashrc"
@@ -401,35 +410,6 @@ detect_openclaw_binary() {
     exit 1
 }
 
-# ── Create systemd service ─────────────────────────────────
-create_systemd_service() {
-    log_step "  Creating systemd service..."
-
-    cat > /etc/systemd/system/openclaw-gateway.service << EOF
-[Unit]
-Description=OpenClaw Gateway
-After=network.target
-
-[Service]
-Type=simple
-User=openclaw
-Group=openclaw
-WorkingDirectory=${OPENCLAW_HOME}
-Environment=HOME=${OPENCLAW_HOME}
-Environment=NODE_ENV=production
-ExecStart=${OPENCLAW_BIN} gateway run --allow-unconfigured
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable openclaw-gateway > /dev/null 2>&1
-    log_ok "systemd service created and enabled (not started yet)"
-}
-
 create_openclaw_user
 install_nodejs
 install_openclaw
@@ -440,8 +420,6 @@ if [[ -n "$OPENCLAW_BIN" && ! -e /usr/local/bin/openclaw ]]; then
     ln -s "$OPENCLAW_BIN" /usr/local/bin/openclaw
     log_ok "Symlinked openclaw → /usr/local/bin/openclaw"
 fi
-
-create_systemd_service
 
 log_ok "Phase 2 complete — OpenClaw installed"
 
@@ -598,28 +576,6 @@ start_services() {
 
     systemctl restart caddy
     log_ok "Caddy started"
-
-    systemctl start openclaw-gateway
-    log_ok "OpenClaw gateway started"
-
-    # Health check — wait up to 15 seconds
-    local retries=15
-    local ok=false
-    while [[ $retries -gt 0 ]]; do
-        if curl -sk --connect-timeout 2 "https://127.0.0.1:18789" > /dev/null 2>&1 || \
-           curl -s --connect-timeout 2 "http://127.0.0.1:18789" > /dev/null 2>&1; then
-            ok=true
-            break
-        fi
-        sleep 1
-        retries=$((retries - 1))
-    done
-
-    if [[ "$ok" == true ]]; then
-        log_ok "Gateway health check passed"
-    else
-        log_warn "Gateway not yet responding — check: systemctl status openclaw-gateway"
-    fi
 }
 
 detect_public_ip
@@ -649,10 +605,9 @@ echo -e "${BOLD}What was done:${NC}"
 echo -e "  ${GREEN}✓${NC} Server hardened (UFW, fail2ban, SSH)"
 echo -e "  ${GREEN}✓${NC} Admin user created: ${BOLD}${ADMIN_USER}${NC}"
 echo -e "  ${GREEN}✓${NC} Node.js $(node --version) installed"
-echo -e "  ${GREEN}✓${NC} OpenClaw installed for system user 'openclaw'"
+echo -e "  ${GREEN}✓${NC} OpenClaw installed for user 'openclaw'"
 echo -e "  ${GREEN}✓${NC} Team deployed: ${BOLD}${TEAM}${NC}"
 echo -e "  ${GREEN}✓${NC} Caddy reverse proxy with TLS"
-echo -e "  ${GREEN}✓${NC} systemd service: openclaw-gateway"
 echo ""
 echo -e "${BOLD}┌─────────────────────────────────────────────────┐${NC}"
 echo -e "${BOLD}│  Admin User: ${YELLOW}${ADMIN_USER}${NC}${BOLD}                              │${NC}"
@@ -666,12 +621,12 @@ echo -e "${BOLD}SSH:${NC}"
 echo -e "  ssh ${ADMIN_USER}@${PUBLIC_IP}"
 echo ""
 echo -e "${BOLD}Service management:${NC}"
-echo -e "  sudo systemctl status openclaw-gateway"
-echo -e "  sudo systemctl restart openclaw-gateway"
-echo -e "  sudo journalctl -u openclaw-gateway -f"
+echo -e "  sudo -u openclaw -i openclaw gateway status"
+echo -e "  sudo -u openclaw -i openclaw gateway restart"
+echo -e "  sudo -u openclaw -i openclaw gateway logs"
 echo ""
 echo -e "${BOLD}Next steps:${NC}"
-echo -e "  1. ${YELLOW}Run onboarding:${NC}"
+echo -e "  1. ${YELLOW}Run onboarding (this also starts the gateway):${NC}"
 echo -e "     sudo -u openclaw -i openclaw onboard"
 echo ""
 if [[ -z "$API_KEY" ]]; then
@@ -682,9 +637,6 @@ fi
 echo -e "  ${DIM}•${NC} Edit your vision:"
 echo -e "     sudo -u openclaw nano ${OPENCLAW_DIR}/shared/VISION.md"
 echo ""
-echo -e "  ${DIM}•${NC} Restart the gateway after onboarding:"
-echo -e "     sudo systemctl restart openclaw-gateway"
-echo ""
 echo -e "  ${DIM}•${NC} View logs:"
-echo -e "     sudo journalctl -u openclaw-gateway -f"
+echo -e "     sudo -u openclaw -i openclaw gateway logs"
 echo ""

@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
   | bash -s -- --team product-builder
 ```
 
-That's it. The script handles everything: server hardening, Node.js, OpenClaw, team deployment, TLS, and systemd.
+That's it. The script handles everything: server hardening, Node.js, OpenClaw, team deployment, and TLS.
 
 ## Options
 
@@ -69,7 +69,7 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 The bootstrap script runs 5 phases:
 
 1. **Server Hardening** — installs packages, creates an admin user with SSH key, configures UFW (ports 22/80/443), enables fail2ban
-2. **OpenClaw Installation** — creates a `openclaw` system user, installs Node.js 22.x, installs OpenClaw, creates a systemd service
+2. **OpenClaw Installation** — creates an `openclaw` user with systemd lingering, installs Node.js 22.x, installs OpenClaw
 3. **Team Deployment** — clones this repo, runs the team's `setup.sh`, configures the API key
 4. **Reverse Proxy** — installs Caddy, provisions TLS (Let's Encrypt with `--domain`, self-signed without), reverse proxies to the gateway
 5. **Summary** — prints the admin username, access URL, SSH command, and next steps
@@ -91,15 +91,15 @@ sudo -u openclaw nano /home/openclaw/.openclaw/shared/VISION.md
 ### Service management
 
 ```bash
-sudo systemctl status openclaw-gateway
-sudo systemctl restart openclaw-gateway
-sudo journalctl -u openclaw-gateway -f
+sudo -u openclaw -i openclaw gateway status
+sudo -u openclaw -i openclaw gateway restart
+sudo -u openclaw -i openclaw gateway logs
 ```
 
 ## Security
 
 - **Admin user** (`zuser-XXXX` or custom): SSH access, sudo, system administration. Non-standard name deters brute-force bots.
-- **`openclaw` system user**: no login shell, no SSH, no sudo — runs the gateway only.
+- **`openclaw` user**: regular user with systemd lingering enabled, no SSH, no sudo — runs the gateway only.
 - Root login is key-only (`PermitRootLogin prohibit-password`) for DO recovery.
 - Password authentication is disabled.
 - UFW allows only ports 22, 80, and 443.
@@ -107,14 +107,14 @@ sudo journalctl -u openclaw-gateway -f
 
 ## Idempotency
 
-The script is safe to run multiple times. Users are checked before creation, packages are idempotent, the systemd unit is overwritten and reloaded, and team setup scripts already handle existing installations.
+The script is safe to run multiple times. Users are checked before creation, packages are idempotent, and team setup scripts already handle existing installations.
 
 ## Troubleshooting
 
 ### Gateway isn't responding
 ```bash
-sudo systemctl status openclaw-gateway
-sudo journalctl -u openclaw-gateway --no-pager -n 50
+sudo -u openclaw -i openclaw gateway status
+sudo -u openclaw -i openclaw gateway logs
 ```
 
 ### Can't SSH as admin user
