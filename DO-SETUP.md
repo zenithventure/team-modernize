@@ -1,12 +1,12 @@
 # Deploy to DigitalOcean
 
-One command takes a fresh Ubuntu 24.04 droplet from zero to a running, TLS-terminated OpenClaw instance with an agent team deployed.
+Three steps take a fresh Ubuntu 24.04 droplet from zero to a running, TLS-terminated OpenClaw instance with an agent team deployed.
 
 ## Prerequisites
 
 - A DigitalOcean account
 - An SSH key added to your DO account
-- ~5 minutes
+- ~10 minutes
 
 ## Quick Start
 
@@ -24,33 +24,63 @@ One command takes a fresh Ubuntu 24.04 droplet from zero to a running, TLS-termi
 ssh root@YOUR_DROPLET_IP
 ```
 
-Then run the one-liner for your team:
+#### Step 1 — Server prep (as root)
+
+Hardens the server, creates users, installs Node.js, and sets up Caddy for TLS:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --team product-builder
+  | bash -s -- --domain example.com
 ```
 
-That's it. The script handles everything: server hardening, Node.js, OpenClaw, team deployment, and TLS.
+#### Step 2 — Install OpenClaw + onboard (as openclaw user, interactive)
 
-## Options
+```bash
+sudo -u openclaw -i
+curl -fsSL https://openclaw.ai/install.sh | bash
+openclaw onboard
+exit
+```
+
+This is interactive — you'll choose your messaging channel, enter your Telegram/Discord token, etc.
+
+#### Step 3 — Deploy team (as root)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
+  | bash -s -- --team operator --api-key sk-ant-...
+```
+
+Done! Your team is deployed and ready to go.
+
+## bootstrap.sh Options
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
   | bash -s -- \
-    --team product-builder \
     --user szewong \
     --key "ssh-ed25519 AAAA..." \
-    --domain example.com \
+    --domain example.com
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--user <name>` | Admin SSH username | `zuser-XXXX` (random 4-digit) |
+| `--key "<pubkey>"` | SSH public key override | Copies from root's `authorized_keys` |
+| `--domain <fqdn>` | Domain for Let's Encrypt TLS | Self-signed via IP |
+
+## install-team.sh Options
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
+  | bash -s -- \
+    --team operator \
     --api-key sk-ant-...
 ```
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--team <name>` | **Required.** Team to deploy | — |
-| `--user <name>` | Admin SSH username | `zuser-XXXX` (random 4-digit) |
-| `--key "<pubkey>"` | SSH public key override | Copies from root's `authorized_keys` |
-| `--domain <fqdn>` | Domain for Let's Encrypt TLS | Self-signed via IP |
 | `--api-key <key>` | Anthropic API key | Leave `.env` as template |
 
 ## Available Teams
@@ -66,21 +96,21 @@ curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/
 
 ## What It Does
 
-The bootstrap script runs 5 phases:
+### Step 1: bootstrap.sh (3 phases)
 
-1. **Server Hardening** — installs packages, creates an admin user with SSH key, configures UFW (ports 22/80/443), enables fail2ban
-2. **OpenClaw Installation** — creates an `openclaw` user with systemd lingering, installs Node.js 22.x, installs OpenClaw
-3. **Team Deployment** — clones this repo, runs the team's `setup.sh`, configures the API key
-4. **Reverse Proxy** — installs Caddy, provisions TLS (Let's Encrypt with `--domain`, self-signed without), reverse proxies to the gateway
-5. **Summary** — prints the admin username, access URL, SSH command, and next steps
+1. **Server Hardening** — installs packages, creates an admin user with SSH key, configures UFW (ports 22/80/443), enables fail2ban, adds swap
+2. **OpenClaw Prep** — creates an `openclaw` user with systemd lingering, installs Node.js 22.x
+3. **Reverse Proxy** — installs Caddy, provisions TLS (Let's Encrypt with `--domain`, self-signed without), reverse proxies to the gateway
+
+### Step 2: OpenClaw install + onboard (manual)
+
+You install OpenClaw and run the interactive onboarding as the `openclaw` user. This lets you choose your messaging channel and enter tokens interactively.
+
+### Step 3: install-team.sh
+
+Clones this repo, runs the team's `setup.sh`, configures the API key in `.env`, and fixes file ownership.
 
 ## After Deployment
-
-### Set your API key (if not passed via `--api-key`)
-
-```bash
-sudo -u openclaw nano /home/openclaw/.openclaw/.env
-```
 
 ### Edit your vision
 
@@ -107,7 +137,7 @@ sudo -u openclaw -i openclaw gateway logs
 
 ## Idempotency
 
-The script is safe to run multiple times. Users are checked before creation, packages are idempotent, and team setup scripts already handle existing installations.
+All three steps are safe to run multiple times. Users are checked before creation, packages are idempotent, and team setup scripts handle existing installations.
 
 ## Troubleshooting
 
@@ -118,11 +148,22 @@ sudo -u openclaw -i openclaw gateway logs
 ```
 
 ### Can't SSH as admin user
-The admin username is printed at the end of the bootstrap. If you lost it, check:
+The admin username is printed at the end of bootstrap.sh. If you lost it, check:
 ```bash
 # From root:
 ls /home/
 ```
+
+### OpenClaw binary not found after install
+Make sure you installed as the `openclaw` user:
+```bash
+sudo -u openclaw -i
+curl -fsSL https://openclaw.ai/install.sh | bash
+openclaw onboard
+```
+
+### install-team.sh says "openclaw binary not found"
+Run Step 2 first — install OpenClaw and complete onboarding as the `openclaw` user.
 
 ### Want more control?
 Edit the team's files to adjust agent behavior:

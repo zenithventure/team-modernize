@@ -20,28 +20,36 @@ Then:
 
 ## Deploy to DigitalOcean
 
-One `curl` command takes a bare Ubuntu 24.04 droplet from **zero to a fully hardened, TLS-terminated, production-ready OpenClaw instance** — with your agent team already deployed and running as a systemd service. No manual setup, no config files to edit, no second SSH session.
-
-Here's what that single command does across 5 automated phases:
-
-1. **Hardens the server** — creates a randomized admin user, locks down SSH (key-only, no passwords), enables UFW (ports 22/80/443 only), activates fail2ban, and adds swap for low-memory droplets
-2. **Installs OpenClaw** — sets up a dedicated `openclaw` system user (no login, no sudo), installs Node.js 22.x, installs OpenClaw, and registers it as a systemd service
-3. **Deploys your team** — clones this repo, runs the team's `setup.sh`, wires up your API key, and sets correct file ownership
-4. **Configures TLS** — installs Caddy as a reverse proxy with automatic Let's Encrypt certificates (or self-signed if no domain), so your gateway is HTTPS from minute one
-5. **Starts everything** — launches the gateway, runs a health check, and prints your access URL, SSH command, and admin credentials
+Three steps take a bare Ubuntu 24.04 droplet from **zero to a fully hardened, TLS-terminated, production-ready OpenClaw instance** with your agent team deployed.
 
 ```bash
 ssh root@YOUR_DROPLET_IP
 ```
 
-Then run:
+**Step 1 — Server prep (as root):**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-  | bash -s -- --team operator
+  | bash -s -- --domain example.com
 ```
 
-The script is idempotent — safe to run again if interrupted. See [DO-SETUP.md](DO-SETUP.md) for full options (`--domain`, `--api-key`, `--user`, etc.) and details.
+**Step 2 — Install OpenClaw + onboard (as openclaw user, interactive):**
+
+```bash
+sudo -u openclaw -i
+curl -fsSL https://openclaw.ai/install.sh | bash
+openclaw onboard
+exit
+```
+
+**Step 3 — Deploy team (as root):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \
+  | bash -s -- --team operator --api-key sk-ant-...
+```
+
+All steps are idempotent — safe to run again if interrupted. See [DO-SETUP.md](DO-SETUP.md) for full options and details.
 
 ## Teams
 

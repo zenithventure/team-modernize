@@ -3,27 +3,23 @@
 # ============================================================
 # OpenClaw Bootstrap — DigitalOcean Droplet Provisioner
 # ============================================================
-# Takes a fresh Ubuntu 24.04 droplet from zero to a running,
-# TLS-terminated OpenClaw instance with an agent team deployed.
+# Prepares a fresh Ubuntu 24.04 droplet: hardens the server,
+# creates users, installs Node.js, and sets up Caddy for TLS.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \
-#     | bash -s -- --team product-builder
+#     | bash -s -- --domain example.com
 #
 # Full:
 #   curl -fsSL ... | bash -s -- \
-#     --team product-builder \
 #     --user szewong \
 #     --key "ssh-ed25519 AAAA..." \
-#     --domain example.com \
-#     --api-key sk-ant-...
+#     --domain example.com
 #
 # Flags:
-#   --team <name>     Required. Team to deploy (product-builder, accountant, etc.)
 #   --user <name>     Admin SSH username (default: zuser-XXXX random)
 #   --key "<pubkey>"  SSH public key (default: copy from root authorized_keys)
 #   --domain <fqdn>   Domain for Let's Encrypt TLS (default: self-signed via IP)
-#   --api-key <key>   Anthropic API key (default: leave .env as template)
 #   --help            Show this help
 # ============================================================
 
@@ -61,15 +57,6 @@ log_err() {
     echo -e "  ${RED}✗${NC} $1"
 }
 
-# ── Cleanup Trap ───────────────────────────────────────────
-CLONE_DIR=""
-cleanup() {
-    if [[ -n "$CLONE_DIR" && -d "$CLONE_DIR" ]]; then
-        rm -rf "$CLONE_DIR"
-    fi
-}
-trap cleanup EXIT
-
 # ── Banner ─────────────────────────────────────────────────
 
 banner() {
@@ -78,24 +65,19 @@ banner() {
     echo -e "${BOLD}║  ${RED}●${NC} ${YELLOW}●${NC} ${GREEN}●${NC} ${BLUE}●${NC}  ${BOLD}OpenClaw Bootstrap                   ║${NC}"
     echo -e "${BOLD}║        DigitalOcean Droplet Provisioner               ║${NC}"
     echo -e "${BOLD}║                                                       ║${NC}"
-    echo -e "${BOLD}║  ${DIM}Harden · Install · Deploy · TLS · Run${NC}${BOLD}               ║${NC}"
+    echo -e "${BOLD}║  ${DIM}Harden · Prep · TLS${NC}${BOLD}                                   ║${NC}"
     echo -e "${BOLD}╚═══════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
 
 # ── Parse Arguments ────────────────────────────────────────
 
-TEAM=""
 ADMIN_USER=""
 SSH_KEY=""
 DOMAIN=""
-API_KEY=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --team)
-            shift; TEAM="${1:-}"
-            ;;
         --user)
             shift; ADMIN_USER="${1:-}"
             ;;
@@ -104,9 +86,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --domain)
             shift; DOMAIN="${1:-}"
-            ;;
-        --api-key)
-            shift; API_KEY="${1:-}"
             ;;
         *)
             log_err "Unknown flag: $1"
@@ -117,33 +96,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── Validate ───────────────────────────────────────────────
-
-VALID_TEAMS="product-builder accountant recruiter real-estate modernizer operator"
-
-if [[ -z "$TEAM" ]]; then
-    log_err "--team is required"
-    echo ""
-    echo "  Available teams: ${VALID_TEAMS}"
-    echo ""
-    echo "  Example:"
-    echo "    curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh \\"
-    echo "      | bash -s -- --team product-builder"
-    exit 1
-fi
-
-# Validate team name
-TEAM_VALID=false
-for t in $VALID_TEAMS; do
-    if [[ "$t" == "$TEAM" ]]; then
-        TEAM_VALID=true
-        break
-    fi
-done
-if [[ "$TEAM_VALID" != true ]]; then
-    log_err "Unknown team: $TEAM"
-    echo "  Available teams: ${VALID_TEAMS}"
-    exit 1
-fi
 
 # Default admin username: zuser-XXXX
 if [[ -z "$ADMIN_USER" ]]; then
@@ -168,10 +120,8 @@ fi
 banner
 
 echo -e "${BOLD}Configuration:${NC}"
-echo -e "  Team:       ${GREEN}${TEAM}${NC}"
 echo -e "  Admin user: ${GREEN}${ADMIN_USER}${NC}"
 echo -e "  Domain:     ${GREEN}${DOMAIN:-<none — self-signed>}${NC}"
-echo -e "  API key:    ${GREEN}${API_KEY:+<provided>}${API_KEY:-<not set — configure later>}${NC}"
 echo ""
 
 # RAM check
@@ -182,10 +132,10 @@ if [[ $TOTAL_RAM_MB -lt 2048 ]]; then
 fi
 
 # ============================================================
-# Phase 1/5 — Server Hardening
+# Phase 1/3 — Server Hardening
 # ============================================================
 
-log_step "[1/5] Server hardening..."
+log_step "[1/3] Server hardening..."
 
 # ── Install packages ───────────────────────────────────────
 install_packages() {
@@ -299,13 +249,12 @@ else
 fi
 
 # ============================================================
-# Phase 2/5 — OpenClaw Installation
+# Phase 2/3 — OpenClaw Prep (user + Node.js)
 # ============================================================
 
-log_step "[2/5] Installing OpenClaw..."
+log_step "[2/3] Preparing OpenClaw environment..."
 
 OPENCLAW_HOME="/home/openclaw"
-OPENCLAW_DIR="${OPENCLAW_HOME}/.openclaw"
 
 # ── Create openclaw user ──────────────────────────────────
 create_openclaw_user() {
@@ -360,149 +309,16 @@ install_nodejs() {
     log_ok "Node.js $(node --version) installed"
 }
 
-# ── Install OpenClaw ───────────────────────────────────────
-install_openclaw() {
-    log_step "  Installing OpenClaw for openclaw user..."
-
-    sudo -u openclaw -H bash -c 'curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-prompt --no-onboard' || {
-        log_warn "OpenClaw installer exited non-zero — checking if binary exists..."
-    }
-}
-
-# ── Detect OpenClaw binary ─────────────────────────────────
-OPENCLAW_BIN=""
-detect_openclaw_binary() {
-    log_step "  Detecting OpenClaw binary..."
-
-    local search_paths=(
-        "${OPENCLAW_HOME}/.npm-global/bin/openclaw"
-        "${OPENCLAW_HOME}/.local/bin/openclaw"
-        "/usr/local/bin/openclaw"
-    )
-
-    for p in "${search_paths[@]}"; do
-        if [[ -x "$p" ]]; then
-            OPENCLAW_BIN="$p"
-            log_ok "Found: ${OPENCLAW_BIN}"
-            return
-        fi
-    done
-
-    # Fallback: ask npm
-    local npm_bin
-    npm_bin=$(sudo -u openclaw -H bash -c 'npm config get prefix 2>/dev/null')/bin/openclaw || true
-    if [[ -x "$npm_bin" ]]; then
-        OPENCLAW_BIN="$npm_bin"
-        log_ok "Found via npm: ${OPENCLAW_BIN}"
-        return
-    fi
-
-    # Last resort: search PATH
-    if sudo -u openclaw -H bash -c 'command -v openclaw' &>/dev/null; then
-        OPENCLAW_BIN=$(sudo -u openclaw -H bash -c 'command -v openclaw')
-        log_ok "Found in PATH: ${OPENCLAW_BIN}"
-        return
-    fi
-
-    log_err "OpenClaw binary not found"
-    echo "  Searched: ${search_paths[*]}"
-    echo "  Try installing manually: npm install -g openclaw"
-    exit 1
-}
-
 create_openclaw_user
 install_nodejs
-install_openclaw
-detect_openclaw_binary
 
-# Symlink into /usr/local/bin so all users can run `openclaw`
-if [[ -n "$OPENCLAW_BIN" && ! -e /usr/local/bin/openclaw ]]; then
-    ln -s "$OPENCLAW_BIN" /usr/local/bin/openclaw
-    log_ok "Symlinked openclaw → /usr/local/bin/openclaw"
-fi
-
-log_ok "Phase 2 complete — OpenClaw installed"
+log_ok "Phase 2 complete — openclaw user and Node.js ready"
 
 # ============================================================
-# Phase 3/5 — Team Deployment
+# Phase 3/3 — Reverse Proxy (Caddy)
 # ============================================================
 
-log_step "[3/5] Deploying team: ${TEAM}..."
-
-REPO_URL="https://github.com/zenithventure/openclaw-agent-teams.git"
-
-# ── Clone repo ─────────────────────────────────────────────
-clone_repo() {
-    log_step "  Cloning agent teams repo..."
-
-    CLONE_DIR=$(mktemp -d)
-    git clone --depth 1 "$REPO_URL" "$CLONE_DIR" > /dev/null 2>&1
-    chown -R openclaw:openclaw "$CLONE_DIR"
-    log_ok "Cloned to ${CLONE_DIR}"
-}
-
-# ── Run team setup.sh ──────────────────────────────────────
-run_team_setup() {
-    log_step "  Running ${TEAM}/setup.sh..."
-
-    if [[ ! -f "${CLONE_DIR}/${TEAM}/setup.sh" ]]; then
-        log_err "setup.sh not found at ${CLONE_DIR}/${TEAM}/setup.sh"
-        exit 1
-    fi
-
-    sudo -u openclaw -H bash "${CLONE_DIR}/${TEAM}/setup.sh"
-    log_ok "Team setup complete"
-}
-
-# ── Configure API key ──────────────────────────────────────
-configure_api_key() {
-    if [[ -n "$API_KEY" ]]; then
-        log_step "  Setting Anthropic API key..."
-
-        local env_file="${OPENCLAW_DIR}/.env"
-        if [[ -f "$env_file" ]]; then
-            # Uncomment and set the key
-            if grep -q "^# ANTHROPIC_API_KEY=" "$env_file"; then
-                sed -i "s|^# ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=${API_KEY}|" "$env_file"
-            elif grep -q "^ANTHROPIC_API_KEY=" "$env_file"; then
-                sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=${API_KEY}|" "$env_file"
-            else
-                echo "ANTHROPIC_API_KEY=${API_KEY}" >> "$env_file"
-            fi
-        else
-            mkdir -p "$(dirname "$env_file")"
-            echo "ANTHROPIC_API_KEY=${API_KEY}" > "$env_file"
-        fi
-
-        chmod 600 "$env_file"
-        chown openclaw:openclaw "$env_file"
-        log_ok "API key configured"
-    else
-        log_warn "No --api-key provided — edit ${OPENCLAW_DIR}/.env later"
-    fi
-}
-
-# ── Fix ownership ──────────────────────────────────────────
-fix_ownership() {
-    log_step "  Fixing file ownership..."
-
-    chown -R openclaw:openclaw "${OPENCLAW_DIR}"
-    chown -R openclaw:openclaw "${OPENCLAW_HOME}"
-    log_ok "Ownership set to openclaw:openclaw"
-}
-
-clone_repo
-run_team_setup
-configure_api_key
-fix_ownership
-
-log_ok "Phase 3 complete — team deployed"
-
-# ============================================================
-# Phase 4/5 — Reverse Proxy (Caddy)
-# ============================================================
-
-log_step "[4/5] Setting up reverse proxy..."
+log_step "[3/3] Setting up reverse proxy..."
 
 # ── Detect public IP ───────────────────────────────────────
 PUBLIC_IP=""
@@ -583,10 +399,10 @@ install_caddy
 write_caddyfile
 start_services
 
-log_ok "Phase 4 complete — reverse proxy configured"
+log_ok "Phase 3 complete — reverse proxy configured"
 
 # ============================================================
-# Phase 5/5 — Summary
+# Summary
 # ============================================================
 
 ACCESS_URL=""
@@ -595,6 +411,8 @@ if [[ -n "$DOMAIN" ]]; then
 else
     ACCESS_URL="https://${PUBLIC_IP}"
 fi
+
+OPENCLAW_DIR="${OPENCLAW_HOME}/.openclaw"
 
 echo ""
 echo -e "${BOLD}╔═══════════════════════════════════════════════════════╗${NC}"
@@ -605,8 +423,7 @@ echo -e "${BOLD}What was done:${NC}"
 echo -e "  ${GREEN}✓${NC} Server hardened (UFW, fail2ban, SSH)"
 echo -e "  ${GREEN}✓${NC} Admin user created: ${BOLD}${ADMIN_USER}${NC}"
 echo -e "  ${GREEN}✓${NC} Node.js $(node --version) installed"
-echo -e "  ${GREEN}✓${NC} OpenClaw installed for user 'openclaw'"
-echo -e "  ${GREEN}✓${NC} Team deployed: ${BOLD}${TEAM}${NC}"
+echo -e "  ${GREEN}✓${NC} openclaw user created (with systemd lingering)"
 echo -e "  ${GREEN}✓${NC} Caddy reverse proxy with TLS"
 echo ""
 echo -e "${BOLD}┌─────────────────────────────────────────────────┐${NC}"
@@ -620,23 +437,20 @@ echo ""
 echo -e "${BOLD}SSH:${NC}"
 echo -e "  ssh ${ADMIN_USER}@${PUBLIC_IP}"
 echo ""
-echo -e "${BOLD}Service management:${NC}"
-echo -e "  sudo -u openclaw -i openclaw gateway status"
-echo -e "  sudo -u openclaw -i openclaw gateway restart"
-echo -e "  sudo -u openclaw -i openclaw gateway logs"
-echo ""
 echo -e "${BOLD}Next steps:${NC}"
-echo -e "  1. ${YELLOW}Run onboarding (this also starts the gateway):${NC}"
-echo -e "     sudo -u openclaw -i openclaw onboard"
 echo ""
-if [[ -z "$API_KEY" ]]; then
-    echo -e "  2. ${YELLOW}Set your API key:${NC}"
-    echo -e "     sudo -u openclaw nano ${OPENCLAW_DIR}/.env"
-    echo ""
-fi
-echo -e "  ${DIM}•${NC} Edit your vision:"
-echo -e "     sudo -u openclaw nano ${OPENCLAW_DIR}/shared/VISION.md"
+echo -e "  1. ${YELLOW}Install OpenClaw (as openclaw user):${NC}"
+echo -e "     sudo -u openclaw -i"
+echo -e "     curl -fsSL https://openclaw.ai/install.sh | bash"
+echo -e "     openclaw onboard"
+echo -e "     exit"
 echo ""
-echo -e "  ${DIM}•${NC} View logs:"
+echo -e "  2. ${YELLOW}Deploy a team:${NC}"
+echo -e "     curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \\"
+echo -e "       | bash -s -- --team operator --api-key sk-ant-..."
+echo ""
+echo -e "  ${DIM}•${NC} Service management:"
+echo -e "     sudo -u openclaw -i openclaw gateway status"
+echo -e "     sudo -u openclaw -i openclaw gateway restart"
 echo -e "     sudo -u openclaw -i openclaw gateway logs"
 echo ""
