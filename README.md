@@ -80,6 +80,8 @@ team-name/
       HEARTBEAT.md       # Agent status tracking
   shared/                # Shared team context
     VISION.md            # Mission, success criteria, constraints, priorities
+    STANDARDS.md         # Behavioral standards all agents follow (session boot, memory, safety, comms)
+    BOOTSTRAP.md         # First-run setup wizard (configures USER.md + VISION.md, then self-deletes)
   skills/                # Team-specific skill definitions (if any)
 ```
 
@@ -107,6 +109,7 @@ Available teams: `accountant`, `modernizer`, `operator`, `product-builder`, `rea
 After installing a team, the main files to tailor are:
 
 - **`~/.openclaw/shared/VISION.md`** — your mission, success criteria, constraints, and priorities. This is the most important file; every agent reads it.
+- **`~/.openclaw/shared/STANDARDS.md`** — behavioral standards every agent follows: session startup, memory management, safety rules, group chat etiquette, platform formatting, and heartbeat vs cron guidance. Edit to customize team-wide behavior.
 - **`~/.openclaw/agents/*/USER.md`** — information about the human operator (you). Each agent has its own copy.
 - **`~/.openclaw/agents/*/SOUL.md`** — personality and communication style. Tweak if you want a different tone.
 - **`~/.openclaw/skills/`** — add or modify team skills to extend what agents can do.
