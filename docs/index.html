@@ -514,16 +514,29 @@
         }
 
         .do-step .step-command {
+            position: relative;
             font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
             font-size: 0.8rem;
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 3rem 0.75rem 1rem;
             margin-top: 0.75rem;
             color: var(--text-secondary);
             word-break: break-all;
             line-height: 1.7;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .do-step .step-command:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .do-step .step-command .copy-icon {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
         }
 
         .do-step .step-command .prompt {
@@ -846,7 +859,7 @@
                     <div class="step-label">As root</div>
                     <h3>Bootstrap the server</h3>
                     <p>Hardens the server, creates users, installs Node.js, and provisions TLS via Caddy. Pass <code>--domain</code> for Let's Encrypt, or omit for self-signed.</p>
-                    <div class="step-command"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh | bash -s</div>
+                    <div class="step-command" onclick="copyCommand(this)" data-copy="curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh | bash -s"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/bootstrap.sh | bash -s<button class="copy-icon" aria-label="Copy to clipboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg></button></div>
                 </div>
             </div>
             <div class="do-step">
@@ -855,7 +868,7 @@
                     <div class="step-label">As openclaw user</div>
                     <h3>Install OpenClaw</h3>
                     <p>Switch to the openclaw user and run the official installer. Onboarding walks you through channel setup, tokens, and API keys.</p>
-                    <div class="step-command"><span class="prompt">$ </span>sudo -u openclaw -i<br><span class="prompt">$ </span>curl -fsSL https://openclaw.ai/install.sh | bash</div>
+                    <div class="step-command" onclick="copyCommand(this)" data-copy="sudo -u openclaw -i&#10;curl -fsSL https://openclaw.ai/install.sh | bash"><span class="prompt">$ </span>sudo -u openclaw -i<br><span class="prompt">$ </span>curl -fsSL https://openclaw.ai/install.sh | bash<button class="copy-icon" aria-label="Copy to clipboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg></button></div>
                 </div>
             </div>
             <div class="do-step">
@@ -864,7 +877,7 @@
                     <div class="step-label">Still as openclaw user</div>
                     <h3>Deploy your team</h3>
                     <p>Pick any team and deploy it. The script clones the repo, runs setup, and deploys agent workspaces and skills.</p>
-                    <div class="step-command"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \<br>&nbsp;&nbsp;| bash -s -- --team operator</div>
+                    <div class="step-command" onclick="copyCommand(this)" data-copy="curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh | bash -s -- --team operator"><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/zenithventure/openclaw-agent-teams/main/install-team.sh \<br>&nbsp;&nbsp;| bash -s -- --team operator<button class="copy-icon" aria-label="Copy to clipboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg></button></div>
                 </div>
             </div>
         </div>
