@@ -295,6 +295,47 @@ create_openclaw_user() {
     done
 }
 
+# ── Create claude user ───────────────────────────────────
+create_claude_user() {
+    log_step "  Creating claude user..."
+
+    local CLAUDE_HOME="/home/claude"
+
+    if id claude &>/dev/null; then
+        log_ok "User claude already exists"
+    else
+        useradd --create-home --home-dir "$CLAUDE_HOME" --shell /bin/bash claude
+        log_ok "Created user: claude"
+    fi
+
+    # Enable lingering so systemd user services survive logout
+    loginctl enable-linger claude
+    local CLAUDE_UID
+    CLAUDE_UID=$(id -u claude)
+    mkdir -p "/run/user/${CLAUDE_UID}"
+    chown claude:claude "/run/user/${CLAUDE_UID}"
+    chmod 700 "/run/user/${CLAUDE_UID}"
+    systemctl start "user@${CLAUDE_UID}.service"
+    log_ok "Lingering enabled, systemd user session started"
+
+    # Ensure npm global bin, XDG_RUNTIME_DIR, and DBUS_SESSION_BUS_ADDRESS
+    # are set for all shell types (login, interactive, and non-interactive).
+    local profile="${CLAUDE_HOME}/.profile"
+    local bashrc="${CLAUDE_HOME}/.bashrc"
+    for rc in "$profile" "$bashrc"; do
+        if ! grep -q '.npm-global/bin' "$rc" 2>/dev/null; then
+            echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$rc"
+        fi
+        if ! grep -q 'XDG_RUNTIME_DIR' "$rc" 2>/dev/null; then
+            echo 'export XDG_RUNTIME_DIR="/run/user/$(id -u)"' >> "$rc"
+        fi
+        if ! grep -q 'DBUS_SESSION_BUS_ADDRESS' "$rc" 2>/dev/null; then
+            echo 'export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"' >> "$rc"
+        fi
+        chown claude:claude "$rc"
+    done
+}
+
 # ── Install Node.js ────────────────────────────────────────
 install_nodejs() {
     log_step "  Installing Node.js..."
@@ -321,6 +362,7 @@ install_nodejs() {
 }
 
 create_openclaw_user
+create_claude_user
 install_nodejs
 
 log_ok "Phase 2 complete — openclaw user and Node.js ready"
@@ -435,6 +477,7 @@ echo -e "  ${GREEN}✓${NC} Server hardened (UFW, fail2ban, SSH)"
 echo -e "  ${GREEN}✓${NC} Admin user created: ${BOLD}${ADMIN_USER}${NC}"
 echo -e "  ${GREEN}✓${NC} Node.js $(node --version) installed"
 echo -e "  ${GREEN}✓${NC} openclaw user created (with systemd lingering)"
+echo -e "  ${GREEN}✓${NC} claude user created (with systemd lingering)"
 echo -e "  ${GREEN}✓${NC} Caddy reverse proxy with TLS"
 echo ""
 echo -e "${BOLD}┌─────────────────────────────────────────────────┐${NC}"
